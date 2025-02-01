@@ -23,7 +23,7 @@ fn main() {
     // TODO: properly put data into message
     let fader = FaderControlVal {
         control: FaderControl::Master(Effect2),
-        value: 0x00,
+        value: 0,
     };
 
     let fader2 = OnControlVal {
@@ -31,7 +31,13 @@ fn main() {
         value: false,
     };
 
-    let fader_data = fader2.serialize();
+    let mut eq = EqControlVal {
+        control: EqControl::Param((EqChannel::CH1, EqBand::Low(EqSpecialMode::Shelf), EqKnob::G)),
+        value: 0
+    };
+    eq.set_value(0x7F);
+
+    let fader_data = eq.serialize();
     data[5] = fader_data[0];
     data[6] = fader_data[1];
     data[7] = fader_data[2];
@@ -41,7 +47,7 @@ fn main() {
         print!("{:02X} ", byte);
     }
 
-    conn_out.send(&data);
+    let _ = conn_out.send(&data);
 
     conn_out.close();
 }
