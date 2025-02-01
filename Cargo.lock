@@ -163,6 +163,7 @@ name = "mixer_controller"
 version = "0.1.0"
 dependencies = [
  "midir",
+ "serde",
  "serde_json",
 ]
 

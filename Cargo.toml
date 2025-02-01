@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 midir = "0.10.1"
 serde_json = "1.0.138"
+serde = { version = "1.0", features = ["derive"] }

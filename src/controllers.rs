@@ -1,10 +1,13 @@
+use serde::{Serialize, Deserialize};
+
 pub trait Controller {
     fn serialize(&self) -> [u8; 4];
 
     type ValueType;
-    fn set_value(&mut self, value: Self::ValueType);
+    fn get_value(&self) -> Self::ValueType;
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct FaderControlVal {
     pub value: u8,
     pub control: FaderControl,
@@ -15,11 +18,20 @@ impl Controller for FaderControlVal {
     }
 
     type ValueType = u8;
-    fn set_value(&mut self, value: u8) {
-        self.value = value.clamp(0x00, 0x7F);
+    fn get_value(&self) -> Self::ValueType {
+        self.value.clamp(0x00, 0x7F)
+    }
+}
+impl FaderControlVal {
+    pub fn new(control: FaderControl, value: u8) -> Self {
+        Self {
+            control,
+            value,
+        }
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum FaderControl {
     Channel(Channel),
     Master(MasterChannel),
@@ -46,6 +58,7 @@ impl FaderControl {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct OnControlVal {
     pub value: bool,
     pub control: OnControl,
@@ -58,11 +71,20 @@ impl Controller for OnControlVal {
     }
 
     type ValueType = bool;
-    fn set_value(&mut self, value: bool) {
-        self.value = value;
+    fn get_value(&self) -> Self::ValueType {
+        self.value
+    }
+}
+impl OnControlVal {
+    pub fn new(control: OnControl, value: bool) -> Self {
+        Self {
+            control,
+            value,
+        }
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum OnControl {
     Channel(Channel),
     Master(MasterChannel),
@@ -112,6 +134,7 @@ impl OnControl {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct EqControlVal {
     pub value: u8,
     pub control: EqControl,
@@ -121,34 +144,34 @@ impl Controller for EqControlVal {
         match &self.control {
             EqControl::On(_) => [0; 4], // TODO: Make this work
             EqControl::Attenuator(_) => [0; 4],
-            EqControl::Param((channel, band, knob)) => {
+            EqControl::Param { channel, band, knob } => {
                 let mut id: u16 = u16::from(knob.value() * 0x58);
                 id += u16::from(band.value() * 0x16);
                 id += u16::from(channel.value());
                 id += 0x120;
-                [0x10, (id >> 7) as u8, (id & 0b0111_1111) as u8, self.value]
+                [0x10, (id >> 7) as u8, (id & 0b0111_1111) as u8, self.get_value()]
             }
         }
     }
 
     type ValueType = u8;
-    fn set_value(&mut self, value: u8) {
-        let v = value.clamp(0x00, 0x7F);
-        self.value = match &self.control {
+    fn get_value(&self) -> Self::ValueType {
+        let v = self.value.clamp(0x00, 0x7F);
+        match &self.control {
             EqControl::On(_) => if v > 0 { 1 } else { 0 },
             EqControl::Attenuator(_) => if v > 0 { 1 } else { 0 },
-            EqControl::Param((_, band, knob)) => match (band, knob) {
+            EqControl::Param { channel: _, band, knob } => match (band, knob) {
                 (_, EqKnob::F) => (v as f64 * 0.937007875).round() as u8,
 
 
-                (EqBand::High(EqSpecialMode::None) |
-                 EqBand::Low (EqSpecialMode::None) |
+                (EqBand::High(EqSpecialMode::Normal) |
+                 EqBand::Low (EqSpecialMode::Normal) |
                  EqBand::HiMid |
                  EqBand::LoMid,
                     EqKnob::Q) => (v as f64 * 0.314960630).round() as u8,
 
-                (EqBand::High(EqSpecialMode::None | EqSpecialMode::Shelf) |
-                 EqBand::Low (EqSpecialMode::None | EqSpecialMode::Shelf) |
+                (EqBand::High(EqSpecialMode::Normal | EqSpecialMode::Shelf) |
+                 EqBand::Low (EqSpecialMode::Normal | EqSpecialMode::Shelf) |
                  EqBand::HiMid |
                  EqBand::LoMid,
                     EqKnob::G) => (v as f64 * 0.566929134).round() as u8,
@@ -166,18 +189,25 @@ impl Controller for EqControlVal {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum EqControl {
     On(EqChannel),
-    Param((EqChannel, EqBand, EqKnob)),
+    Param {
+        channel: EqChannel,
+        band: EqBand,
+        knob: EqKnob
+    },
     Attenuator(Channel), // sans Returns
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum EqSpecialMode {
-    None,
+    Normal,
     Shelf,
     Filter,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum EqBand {
     Low(EqSpecialMode),
     LoMid,
@@ -194,6 +224,8 @@ impl EqBand {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
 pub enum EqKnob {
     F,
     G,
@@ -209,6 +241,7 @@ impl EqKnob {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum EqChannel {
     CH1,
     CH2,
@@ -260,6 +293,7 @@ impl EqChannel {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Channel {
     CH1,
     CH2,
@@ -301,6 +335,7 @@ impl Channel {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum MasterChannel {
     Aux1,
     Aux2,
@@ -333,6 +368,7 @@ impl MasterChannel {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Bus {
     Bus1,
     Bus2,
