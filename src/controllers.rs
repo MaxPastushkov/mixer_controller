@@ -14,7 +14,8 @@ pub struct FaderControlVal {
 }
 impl Controller for FaderControlVal {
     fn serialize(&self) -> [u8; 4] {
-        [0x10, 0x00, self.control.get_id(), self.value]
+        let id = self.control.get_id();
+        [0x10, id[0], id[1], self.value]
     }
 
     type ValueType = u8;
@@ -23,6 +24,7 @@ impl Controller for FaderControlVal {
     }
 }
 impl FaderControlVal {
+    #[allow(dead_code)]
     pub fn new(control: FaderControl, value: u8) -> Self {
         Self {
             control,
@@ -33,7 +35,7 @@ impl FaderControlVal {
 
 #[derive(Serialize, Deserialize)]
 pub enum FaderControl {
-    Channel(Channel),
+    StereoOut(Channel),
     Master(MasterChannel),
     Aux1Send(Channel),
     Aux2Send(Channel),
@@ -44,16 +46,22 @@ pub enum FaderControl {
 }
 
 impl FaderControl {
-    fn get_id(&self) -> u8 {
+    fn get_id(&self) -> [u8; 2] {
         match self {
-            FaderControl::Channel(c) => c.value() + 0x0B,
-            FaderControl::Master(c) => c.value() + 0x1B,
-            FaderControl::Aux1Send(c) => c.value() + 0x26,
-            FaderControl::Aux2Send(c) => c.value() + 0x32,
-            FaderControl::Aux3Send(c) => c.value() + 0x3E,
-            FaderControl::Aux4Send(c) => c.value() + 0x4A,
-            FaderControl::Effect1Send(c) => c.value() + 0x56,
-            FaderControl::Effect2Send(c) => c.value() + 0x62,
+            FaderControl::StereoOut(c) => [0x00, c.value() + 0x0B],
+            FaderControl::Master(c) => [0x00, c.value() + 0x1B],
+            FaderControl::Aux1Send(c) => [0x00, c.value() + 0x26],
+            FaderControl::Aux2Send(c) => [0x00, c.value() + 0x32],
+            FaderControl::Aux3Send(c) => [0x00, c.value() + 0x3E],
+            FaderControl::Aux4Send(c) => [0x00, c.value() + 0x4A],
+            FaderControl::Effect1Send(c) => match c {
+                Channel::Return2 => [0x01, 0x04],
+                _ => [0x00, c.value() + 0x56]
+            },
+            FaderControl::Effect2Send(c) => match c {
+                Channel::Return1 => [0x01, 0x05],
+                _ => [0x00, c.value() + 0x62],
+            }
         }
     }
 }
@@ -76,6 +84,7 @@ impl Controller for OnControlVal {
     }
 }
 impl OnControlVal {
+    #[allow(dead_code)]
     pub fn new(control: OnControl, value: bool) -> Self {
         Self {
             control,
