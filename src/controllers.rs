@@ -37,12 +37,12 @@ impl FaderControlVal {
 pub enum FaderControl {
     StereoOut(Channel),
     Master(MasterChannel),
-    Aux1Send(Channel),
-    Aux2Send(Channel),
-    Aux3Send(Channel),
-    Aux4Send(Channel),
-    Effect1Send(Channel), // Does not have Return2
-    Effect2Send(Channel), // Does not have Return1
+    Aux1(Channel),
+    Aux2(Channel),
+    Aux3(Channel),
+    Aux4(Channel),
+    Effect1(Channel), // Does not have Return2
+    Effect2(Channel), // Does not have Return1
 }
 
 impl FaderControl {
@@ -50,15 +50,15 @@ impl FaderControl {
         match self {
             FaderControl::StereoOut(c) => [0x00, c.value() + 0x0B],
             FaderControl::Master(c) => [0x00, c.value() + 0x1B],
-            FaderControl::Aux1Send(c) => [0x00, c.value() + 0x26],
-            FaderControl::Aux2Send(c) => [0x00, c.value() + 0x32],
-            FaderControl::Aux3Send(c) => [0x00, c.value() + 0x3E],
-            FaderControl::Aux4Send(c) => [0x00, c.value() + 0x4A],
-            FaderControl::Effect1Send(c) => match c {
+            FaderControl::Aux1(c) => [0x00, c.value() + 0x26],
+            FaderControl::Aux2(c) => [0x00, c.value() + 0x32],
+            FaderControl::Aux3(c) => [0x00, c.value() + 0x3E],
+            FaderControl::Aux4(c) => [0x00, c.value() + 0x4A],
+            FaderControl::Effect1(c) => match c {
                 Channel::Return2 => [0x01, 0x04],
                 _ => [0x00, c.value() + 0x56]
             },
-            FaderControl::Effect2Send(c) => match c {
+            FaderControl::Effect2(c) => match c {
                 Channel::Return1 => [0x01, 0x05],
                 _ => [0x00, c.value() + 0x62],
             }

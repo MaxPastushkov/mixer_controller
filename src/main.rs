@@ -20,13 +20,13 @@ fn send_midi_data(data: [u8; 4]) {
     conn_out.close();
 }
 
-#[post("/update_fader")]
+#[post("/fader")]
 async fn update_fader(fader: web::Json<FaderControlVal>) -> HttpResponse {
     send_midi_data(fader.serialize());
     HttpResponse::Ok().finish()
 }
 
-#[post("/update_on")]
+#[post("/on")]
 async fn update_on(on: web::Json<OnControlVal>) -> HttpResponse {
     send_midi_data(on.serialize());
     HttpResponse::Ok().finish()

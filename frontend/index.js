@@ -48,6 +48,7 @@ class MasterChannel {
 class Bus {
 
     _masterVolume = 0;
+    _isOn = false;
     _sends;
 
     constructor(name) {
@@ -70,20 +71,20 @@ class Bus {
             CH1516: 0,
         };
 
-        if (name !== "Effect1Send") this._sends.Return1 = 0;
-        if (name !== "Effect2Send") this._sends.Return2 = 0;
+        if (name !== "Effect1") this._sends.Return1 = 0;
+        if (name !== "Effect2") this._sends.Return2 = 0;
     }
 
     setSend(channel, value) {
-        if (channel in this._sends) {
-            if (this._sends[channel].send) { // MasterBus
-                this._sends[channel].send = value;
-            } else {
-                this._sends[channel] = value;
-            }
-        } else {
+        if (!(channel in this._sends)) {
             console.log("Warning: Invalid channel: " + channel);
             return;
+        }
+
+        if (this._sends[channel].send) { // MasterBus
+            this._sends[channel].send = value;
+        } else {
+            this._sends[channel] = value;
         }
 
         let obj = {
@@ -92,7 +93,7 @@ class Bus {
         };
         obj.control[this.name] = channel;
 
-        emitUpdate(obj, "update_fader");
+        emitUpdate(obj, "fader");
     }
     getSend(channel) {
         return this._sends[channel].send ? this._sends[channel].send : this._sends[channel];
@@ -105,10 +106,20 @@ class Bus {
             control: {
                 Master: this.name,
             }
-        }, "update_fader");
+        }, "fader");
     }
     getMaster() {
         return this._masterVolume;
+    }
+
+    setMasterOn(on) {
+        this._isOn = on;
+        emitUpdate({
+            value: on,
+            control: {
+                Master: this.name
+            }
+        }, "on");
     }
 }
 
@@ -134,15 +145,30 @@ class StereoOut extends Bus {
             Effect2: new MasterChannel(),
         };
     }
+
+    setOn(channel, on) {
+        if (!(channel in this._sends)) {
+            console.log("Warning: Invalid channel: " + channel);
+            return;
+        }
+
+        this._sends[channel].on = on;
+        emitUpdate({
+            value: on,
+            control: {
+                Channel: channel
+            }
+        }, "on");
+    }
 }
 
 let mixerState = {
     stereoOut: new StereoOut(),
-    aux1: new Bus("Aux1Send"),
-    aux2: new Bus("Aux2Send"),
-    aux3: new Bus("Aux3Send"),
-    aux4: new Bus("Aux4Send"),
+    aux1: new Bus("Aux1"),
+    aux2: new Bus("Aux2"),
+    aux3: new Bus("Aux3"),
+    aux4: new Bus("Aux4"),
     // TODO: Bus1-4
-    effect1: new Bus("Effect1Send"),
-    effect2: new Bus("Effect2Send"),
+    effect1: new Bus("Effect1"),
+    effect2: new Bus("Effect2"),
 };

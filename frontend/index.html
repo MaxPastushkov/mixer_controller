@@ -8,6 +8,7 @@
         <label>
             <input type="range" min="0" max="127" value="0" class="slider" oninput="mixerState.stereoOut.setSend('CH1', parseInt(this.value))" />
             <input type="range" min="0" max="127" value="0" class="slider" oninput="mixerState.effect2.setSend('Return1', parseInt(this.value))" />
+            <input type="checkbox" onclick="mixerState.aux1.setMasterOn(this.checked)" />
         </label>
     </body>
 </html>
