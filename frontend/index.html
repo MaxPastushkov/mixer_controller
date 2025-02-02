@@ -2,4 +2,8 @@
     <head>
         <script src="index.js"></script>
     </head>
+
+    <body>
+        <input type="range" min="0" max="127" value="0" class="slider" oninput="mixerState.stereoOut.setSend('CH1', parseInt(this.value))" />
+    </body>
 </html>

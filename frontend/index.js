@@ -1,5 +1,13 @@
 function emitUpdate(obj) {
     console.log(obj);
+
+    fetch("http://127.0.0.1:8080/update_value", {
+        method: "POST",
+        body: JSON.stringify(obj),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
 }
 
 class Eq {
@@ -58,14 +66,13 @@ class Bus {
         CH1516: 0,
     };
 
-    constructor(name, isEff1, isEff2) {
+    constructor(name) {
         this.name = name;
-        if (!isEff1) this.#sends.Return1 = 0;
-        if (!isEff2) this.#sends.Return2 = 0;
+        if (name !== "Return1") this.#sends.Return1 = 0;
+        if (name !== "Return2") this.#sends.Return2 = 0;
     }
 
     setSend(channel, value) {
-
         if (channel in this.#sends) {
             this.#sends[channel] = value;
         } else {
@@ -80,8 +87,12 @@ class Bus {
             }
         });
     }
+    getSend(channel) {
+        return this.#sends[channel];
+    }
 
     setMaster(value) {
+        this.#masterVolume = value;
         emitUpdate({
             value,
             control: {
@@ -89,15 +100,18 @@ class Bus {
             }
         });
     }
+    getMaster() {
+        return this.#masterVolume;
+    }
 }
 
 let mixerState = {
-    stereoOut: new Bus(),
-    aux1: new Bus(),
-    aux2: new Bus(),
-    aux3: new Bus(),
-    aux4: new Bus(),
+    stereoOut: new Bus("StereoOut"),
+    aux1: new Bus("Aux1"),
+    aux2: new Bus("Aux2"),
+    aux3: new Bus("Aux3"),
+    aux4: new Bus("Aux4"),
     // TODO: Bus1-4
-    effect1: new Bus(true, false),
-    effect2: new Bus(false, true),
+    effect1: new Bus("Effect1"),
+    effect2: new Bus("Effect2"),
 };
