@@ -9,6 +9,11 @@ use actix_cors::Cors;
 use bimap::BiHashMap;
 use crate::controller::*;
 use crate::state_map::init_state_map;
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+use serde::Serialize;
+
+static STATE_MAP: Lazy<Mutex<BiHashMap<u16, Address>>> = Lazy::new(|| Mutex::new(BiHashMap::new()));
 
 fn send_midi_data(data: [u8; 4]) {
     let midi_out = MidiOutput::new("My test output").unwrap();
@@ -40,15 +45,21 @@ fn send_midi_data(data: [u8; 4]) {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
-    let mut state_map = BiHashMap::<u16, Address>::new();
-    init_state_map(&mut state_map);
+    init_state_map();
 
-    let addr: &u16 = state_map.get_by_right(&Address::BusSend(BusSend::Effect2(Channel::Return1))).unwrap();
-    let message: [u8; 4] = [0x10, ((addr & 0b1111111_0000000) >> 7) as u8, (addr & 0b1111111) as u8, 0x7F];
-    send_midi_data(message);
+    unsafe {
+        let addr: u16 = *STATE_MAP.lock().unwrap().get_by_right(&Address::EqControl(EqControl::Param {
+            channel: EqChannel::Aux1,
+            band: EqBand::Low,
+            knob: EqKnob::F,
+        })).unwrap();
 
-    for a in message.iter() {
-        println!("{:02X}", a);
+        let message: [u8; 4] = [0x10, ((addr & 0b1111111_0000000) >> 7) as u8, (addr & 0b1111111) as u8, 0x77];
+        send_midi_data(message);
+
+        for a in message.iter() {
+            println!("{:02X}", a);
+        }
     }
 
     HttpServer::new(|| {

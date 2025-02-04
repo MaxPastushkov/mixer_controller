@@ -5,6 +5,7 @@ use derivative::Derivative;
 #[derivative(PartialEq, Hash)]
 pub enum Address {
     BusSend(BusSend),
+    EqControl(EqControl),
 }
 
 #[derive(Serialize, Deserialize, Eq, Derivative)]
@@ -17,6 +18,43 @@ pub enum BusSend {
     Aux4(Channel),
     Effect1(Channel), // Does not have Return1
     Effect2(Channel), // Does not have Return2
+}
+
+#[derive(Serialize, Deserialize, Eq, Derivative)]
+#[derivative(PartialEq, Hash)]
+pub enum EqControl {
+    On(EqChannel),
+    Param {
+        channel: EqChannel,
+        band: EqBand,
+        knob: EqKnob
+    },
+    Attenuator(Channel), // sans Returns
+}
+#[derive(Serialize, Deserialize, Eq, Derivative)]
+#[derivative(PartialEq, Hash)]
+pub enum EqBand {
+    Low,
+    LoMid,
+    HiMid,
+    High,
+}
+#[derive(Serialize, Deserialize, Eq, Derivative)]
+#[derivative(PartialEq, Hash)]
+pub enum EqChannel {
+    Channel(Channel),
+    Aux1,
+    Aux2,
+    Aux3,
+    Aux4,
+    StereoOut,
+}
+#[derive(Serialize, Deserialize, Eq, Derivative)]
+#[derivative(PartialEq, Hash)]
+pub enum EqKnob {
+    F,
+    G,
+    Q,
 }
 
 #[derive(Serialize, Deserialize, Eq, Derivative)]

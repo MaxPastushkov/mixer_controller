@@ -971,6 +971,7 @@ dependencies = [
  "bimap",
  "derivative",
  "midir",
+ "once_cell",
  "serde",
  "serde_json",
 ]
