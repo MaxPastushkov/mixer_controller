@@ -89,11 +89,13 @@ class Bus {
 
         let obj = {
             value,
-            control: {}
+            control: {
+                BusSend: {}
+            }
         };
-        obj.control[this.name] = channel;
+        obj.control.BusSend[this.name] = channel;
 
-        emitUpdate(obj, "fader");
+        emitUpdate(obj, "u7");
     }
     getSend(channel) {
         return this._sends[channel].send ? this._sends[channel].send : this._sends[channel];
@@ -104,9 +106,9 @@ class Bus {
         emitUpdate({
             value,
             control: {
-                Master: this.name,
+                BusMaster: this.name,
             }
-        }, "fader");
+        }, "u7");
     }
     getMaster() {
         return this._masterVolume;
@@ -117,9 +119,9 @@ class Bus {
         emitUpdate({
             value: on,
             control: {
-                Master: this.name
+                Channel: this.name
             }
-        }, "on");
+        }, "bit");
     }
 }
 

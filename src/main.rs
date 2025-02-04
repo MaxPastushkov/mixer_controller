@@ -1,4 +1,3 @@
-mod controllers;
 mod state_map;
 mod controller;
 
@@ -30,37 +29,66 @@ fn send_midi_data(data: [u8; 4]) {
     conn_out.close();
 }
 
-// #[post("/fader")]
-// async fn update_fader(fader: web::Json<FaderControlVal>) -> HttpResponse {
-//     send_midi_data(fader.serialize());
-//     HttpResponse::Ok().finish()
-// }
-//
-// #[post("/on")]
-// async fn update_on(on: web::Json<OnControlVal>) -> HttpResponse {
-//     send_midi_data(on.serialize());
-//     HttpResponse::Ok().finish()
-// }
+#[post("/u7")]
+async fn update_u7_value(body: web::Json<U7ControlVal>) -> HttpResponse {
+
+    let mut data: [u8; 4] = [0x10, 0x00, 0x00, 0x00];
+
+    let addr: u16 = *STATE_MAP.lock().unwrap().get_by_right(&body.control).unwrap();
+    data[1] = ((addr >> 7) & 0x7F) as u8; // Upper 7 bits
+    data[2] = (addr & 0x7F) as u8; // Lower 7 bits
+    data[3] = body.value;
+
+    send_midi_data(data);
+
+    HttpResponse::Ok().finish()
+}
+
+#[post("/bit")]
+async fn update_bit_value(body: web::Json<BitControlVal>) -> HttpResponse {
+
+    let mut data: [u8; 4] = [0x40, 0x00, 0x00, 0x00];
+
+    let (group, id) = body.control.to_address();
+    data[1] = ((group >> 7) & 0x7F) as u8; // Upper 7 bits
+    data[2] = (group & 0x7F) as u8; // Lower 7 bits
+    data[3] = id | (if body.value { 0b1000 } else { 0b0000 });
+
+    send_midi_data(data);
+
+    HttpResponse::Ok().finish()
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
     init_state_map();
 
-    unsafe {
-        let addr: u16 = *STATE_MAP.lock().unwrap().get_by_right(&Address::EqControl(EqControl::Param {
-            channel: EqChannel::Aux1,
-            band: EqBand::Low,
-            knob: EqKnob::F,
-        })).unwrap();
+    let addr: u16 = *STATE_MAP.lock().unwrap().get_by_right(&Address::EqControl(EqControl::Param {
+        channel: EqChannel::StereoOut,
+        band: EqBand::LoMid,
+        knob: EqKnob::F,
+    })).unwrap();
 
-        let message: [u8; 4] = [0x10, ((addr & 0b1111111_0000000) >> 7) as u8, (addr & 0b1111111) as u8, 0x77];
-        send_midi_data(message);
+    let message: [u8; 4] = [0x10, ((addr & 0b1111111_0000000) >> 7) as u8, (addr & 0b1111111) as u8, 0x77];
+    send_midi_data(message);
 
-        for a in message.iter() {
-            println!("{:02X}", a);
-        }
+    for a in message.iter() {
+        println!("{:02X}", a);
     }
+
+    let tmp = U7ControlVal {
+        control: Address::BusSend(BusSend::StereoOut(Channel::CH1)),
+        value: 0x7F,
+    };
+
+    println!("{}", serde_json::to_string(&tmp)?);
+
+    println!("{}", serde_json::to_string(&Address::EqControl(EqControl::Param {
+        channel: EqChannel::StereoOut,
+        band: EqBand::LoMid,
+        knob: EqKnob::F,
+    }))?);
 
     HttpServer::new(|| {
 
@@ -71,8 +99,8 @@ async fn main() -> std::io::Result<()> {
             .send_wildcard();
 
         App::new().wrap(cors)
-            // .service(update_fader)
-            // .service(update_on)
+            .service(update_u7_value)
+            .service(update_bit_value)
     })
         .bind("127.0.0.1:8080")?
         .run()
