@@ -31,7 +31,7 @@ pub fn init_state_map() {
     for knob in vec![EqKnob::F, EqKnob::G, EqKnob::Q] {
         for band in vec![EqBand::Low, EqBand::LoMid, EqBand::HiMid, EqBand::High] {
             for eq_channel in 0u8..=21 {
-                if let Some(channel) = Channel::from_u8(eq_channel) {
+                if let Some(channel) = EqChannel::from_u8(eq_channel) {
                     map.insert(i, Address::EqControl(EqControl::Param {
                         channel,
                         band: band.clone(),
