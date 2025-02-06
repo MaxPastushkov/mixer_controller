@@ -19,6 +19,7 @@ pub enum Address {
     BusSend(BusSend),
     BusMaster(Bus),
     EqControl(EqControl),
+    OnControl(OnControl),
 }
 
 #[derive(Serialize, Deserialize, Eq, Derivative)]
