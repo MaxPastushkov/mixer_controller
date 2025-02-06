@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use derivative::Derivative;
 
 #[derive(Serialize, Deserialize)]
 pub struct U7ControlVal {
