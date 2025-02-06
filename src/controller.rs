@@ -13,8 +13,7 @@ pub struct BitControlVal {
     pub value: bool,
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Address {
     BusSend(BusSend),
     BusMaster(Bus),
@@ -22,8 +21,7 @@ pub enum Address {
     OnControl(OnControl),
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum BusSend {
     StereoOut(Channel),
     Aux1(Channel),
@@ -34,8 +32,7 @@ pub enum BusSend {
     Effect2(Channel), // Does not have Return2
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Bus {
     StereoOut,
     Aux1,
@@ -46,8 +43,7 @@ pub enum Bus {
     Effect2,
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum EqControl {
     On(EqChannel),
     Param {
@@ -57,16 +53,14 @@ pub enum EqControl {
     },
     Attenuator(Channel), // sans Returns
 }
-#[derive(Serialize, Deserialize, Eq, Derivative, Clone)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum EqBand {
     Low,
     LoMid,
     HiMid,
     High,
 }
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum EqChannel {
     CH1,
     CH2,
@@ -118,16 +112,14 @@ impl EqChannel {
         }
     }
 }
-#[derive(Serialize, Deserialize, Eq, Derivative, Clone)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum EqKnob {
     F,
     G,
     Q,
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Channel {
     CH1 = 0,
     CH2 = 1,
@@ -170,8 +162,7 @@ impl Channel {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, Derivative)]
-#[derivative(PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum OnControl {
     Channel(EqChannel),
     Effect1Send,
