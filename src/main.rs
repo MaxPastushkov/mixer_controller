@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex, LazyLock};
 use crate::broadcast::Broadcaster;
 use futures::executor;
 
-const MIDI_PORT: usize = 0;
+const MIDI_PORT: usize = 1;
 
 static STATE_MAP: LazyLock<Mutex<BiHashMap<u16, Address>>> = LazyLock::new(|| Mutex::new(BiHashMap::new()));
 
@@ -32,7 +32,7 @@ fn send_midi_data(data: &[u8]) {
 }
 
 #[post("/u7")]
-async fn update_u7_value(body: web::Json<U7ControlVal>) -> HttpResponse {
+async fn update_u7_value(body: web::Json<U7ControlVal>, broadcaster: web::Data<Broadcaster>) -> HttpResponse {
 
     let mut data: [u8; 4] = [0x10, 0x00, 0x00, 0x00];
 
@@ -43,14 +43,13 @@ async fn update_u7_value(body: web::Json<U7ControlVal>) -> HttpResponse {
 
     send_midi_data(&data);
 
-    // TODO: Index clients in order for this to work:
-    //broadcaster.broadcast(serde_json::to_string(&body).unwrap().as_str()).await;
+    broadcaster.broadcast(serde_json::to_string(&body).unwrap().as_str()).await;
 
     HttpResponse::Ok().finish()
 }
 
 #[post("/bit")]
-async fn update_bit_value(body: web::Json<BitControlVal>) -> HttpResponse {
+async fn update_bit_value(body: web::Json<BitControlVal>, broadcaster: web::Data<Broadcaster>) -> HttpResponse {
 
     let mut data: [u8; 4] = [0x40, 0x00, 0x00, 0x00];
 
@@ -60,6 +59,8 @@ async fn update_bit_value(body: web::Json<BitControlVal>) -> HttpResponse {
     data[3] = id | (if body.value { 0b1000 } else { 0b0000 });
 
     send_midi_data(&data);
+
+    broadcaster.broadcast(serde_json::to_string(&body).unwrap().as_str()).await;
 
     HttpResponse::Ok().finish()
 }
@@ -104,6 +105,7 @@ async fn main() -> std::io::Result<()> {
                         let obj = U7ControlVal {
                             control,
                             value: message[8],
+                            client_id: String::new(),
                         };
                         serde_json::to_string(&obj).unwrap()
                     },
@@ -114,6 +116,7 @@ async fn main() -> std::io::Result<()> {
                         let obj = BitControlVal {
                             control: BitControl::from_address((group, Some(bits))).unwrap(),
                             value,
+                            client_id: String::new(),
                         };
                         serde_json::to_string(&obj).unwrap()
                     }
@@ -130,6 +133,7 @@ async fn main() -> std::io::Result<()> {
                         let obj = U7ControlVal {
                             control: *address,
                             value,
+                            client_id: String::new(),
                         };
                         executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
 
@@ -139,7 +143,8 @@ async fn main() -> std::io::Result<()> {
                             if let Some(control) = BitControl::from_address((i as u16 + 0x0C, Some(j))) {
                                 let obj = BitControlVal {
                                     control,
-                                    value: value & (1 << j) != 0
+                                    value: value & (1 << j) != 0,
+                                    client_id: String::new(),
                                 };
                                 executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
                                 // TODO: Make this line only run once

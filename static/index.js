@@ -1,4 +1,6 @@
 
+const uid = Math.floor(Math.random() * 1000000).toString();
+
 class Busses {
     StereoOut;
     Aux1;
@@ -122,9 +124,10 @@ function updateControl(obj) {
 
 // Called by control
 function postValue(control, value, endpoint) {
-    const obj = {control, value};
+    let obj = {control, value};
     updateState(obj);
 
+    obj.client_id = uid;
     console.log(obj);
 
     fetch("http://127.0.0.1:8080/" + endpoint, {
@@ -151,8 +154,14 @@ window.onload = initControls;
 
 const evtSource = new EventSource("/events");
 evtSource.onmessage = (event) => {
-    try {
-        updateControl(JSON.parse(event.data));
-        console.log("Received event: " + event.data);
-    } catch {}
+
+    let data;
+    try { data = JSON.parse(event.data); } catch { return }
+
+    if (data.client_id === uid) {
+        return;
+    }
+
+    console.log("Received event: " + event.data);
+    updateControl(data);
 }

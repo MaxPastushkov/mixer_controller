@@ -4,12 +4,14 @@ use serde::{Serialize, Deserialize};
 pub struct U7ControlVal {
     pub control: Address,
     pub value: u8, // Top bit is ignored
+    pub client_id: String, // For client sync
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct BitControlVal {
     pub control: BitControl,
     pub value: bool,
+    pub client_id: String, // For client sync
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
