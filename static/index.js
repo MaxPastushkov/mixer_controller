@@ -39,7 +39,7 @@ class Channels {
     Return1;
     Return2;
 
-    constructor(initValue) {
+    constructor(initValue, hasReturn1 = true, hasReturn2 = true) {
         this.CH1 = initValue;
         this.CH2 = initValue;
         this.CH3 = initValue;
@@ -54,8 +54,33 @@ class Channels {
         this.CH12 = initValue;
         this.CH1314 = initValue;
         this.CH1516 = initValue;
-        this.Return1 = initValue;
-        this.Return2 = initValue;
+
+        if (hasReturn1)
+            this.Return1 = initValue;
+        else
+            delete this.Return1;
+
+        if (hasReturn2)
+            this.Return2 = initValue;
+        else
+            delete this.Return2;
+    }
+}
+
+class EqChannels extends Channels {
+    StereoOut;
+    Aux1;
+    Aux2;
+    Aux3;
+    Aux4;
+
+    constructor(initValue) {
+        super(initValue);
+        this.StereoOut = initValue;
+        this.Aux1 = initValue;
+        this.Aux2 = initValue;
+        this.Aux3 = initValue;
+        this.Aux4 = initValue;
     }
 }
 
@@ -66,15 +91,39 @@ let mixerState = {
         Aux2: new Channels(0),
         Aux3: new Channels(0),
         Aux4: new Channels(0),
-        Effect1: new Channels(0),
-        Effect2: new Channels(0)
+        Effect1: new Channels(0, false, true),
+        Effect2: new Channels(0, true, false)
     },
     BusMaster: new Busses(0),
     ChannelEnable: new Channels(false),
-    BusEnable: new Busses(false)
+    BusEnable: new Busses(false),
+    EqControl: {
+        F: {
+            Low:   new EqChannels(0),
+            LoMid: new EqChannels(0),
+            HiMid: new EqChannels(0),
+            High:  new EqChannels(0)
+        },
+        G: {
+            Low:   new EqChannels(0),
+            LoMid: new EqChannels(0),
+            HiMid: new EqChannels(0),
+            High:  new EqChannels(0)
+        },
+        Q: {
+            Low:   new EqChannels(0),
+            LoMid: new EqChannels(0),
+            HiMid: new EqChannels(0),
+            High:  new EqChannels(0)
+        },
+        On: new EqChannels(false),
+        Attenuator: new Channels(false, false, false)
+    }
 };
 delete mixerState.BusSend.Effect1.Return1;
 delete mixerState.BusSend.Effect2.Return2;
+delete mixerState.EqControl.Attenuator.Return1;
+delete mixerState.EqControl.Attenuator.Return2;
 
 // Convert path to object
 function index(obj, idxList, value) {
@@ -97,6 +146,15 @@ function getFirstKey(obj, arr) {
     return getFirstKey(Object.values(obj)[0], arr);
 }
 
+function dotToObj(dot) {
+    if (typeof dot == "string") dot = dot.split('.');
+    if (dot.length < 2) return dot[0];
+
+    let obj = {};
+    obj[dot[0]] = dotToObj(dot.slice(1));
+    return obj;
+}
+
 function updateState(obj) {
     let {control, value} = obj;
 
@@ -111,7 +169,10 @@ function updateState(obj) {
 function updateControl(obj) {
     updateState(obj);
 
-    let control = document.getElementById(JSON.stringify(obj.control));
+    let dot_arr = [];
+    getFirstKey(obj.control, dot_arr);
+
+    let control = document.getElementById(dot_arr.join('.'));
     if (control) {
         if (typeof obj.value === "boolean") {
             control.checked = obj.value;
@@ -123,8 +184,11 @@ function updateControl(obj) {
 }
 
 // Called by control
-function postValue(control, value, endpoint) {
-    let obj = {control, value};
+function postValue(controlDot, value, endpoint) {
+    let obj = {
+        control: dotToObj(controlDot),
+        value
+    };
     updateState(obj);
 
     obj.client_id = uid;
@@ -143,9 +207,9 @@ function initControls() {
     for (let control of document.getElementsByClassName("control")) {
 
         if (control.type === "range") {
-            control.setAttribute("oninput", "postValue(" + control.id + ",parseInt(this.value),'u7')");
+            control.setAttribute("oninput", "postValue(this.id,parseInt(this.value),'u7')");
         } else if (control.type === "checkbox") {
-            control.setAttribute("oninput", "postValue(" + control.id + ",this.checked,'bit')");
+            control.setAttribute("oninput", "postValue(this.id,this.checked,'bit')");
         }
     }
 }

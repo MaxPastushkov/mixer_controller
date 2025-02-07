@@ -178,11 +178,6 @@ async fn main() -> std::io::Result<()> {
     //
     // println!("{}", serde_json::to_string(&tmp)?);
     //
-    // println!("{}", serde_json::to_string(&Address::EqControl(EqControl::Param {
-    //     channel: EqChannel::StereoOut,
-    //     band: EqBand::LoMid,
-    //     knob: EqKnob::F,
-    // }))?);
 
     HttpServer::new(move || {
 

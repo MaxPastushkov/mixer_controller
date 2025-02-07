@@ -18,7 +18,7 @@ pub struct BitControlVal {
 pub enum Address {
     BusSend(BusSend),
     BusMaster(Bus),
-    EqControl(EqControl),
+    EqControl(EqKnob),
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
@@ -44,21 +44,16 @@ pub enum Bus {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum EqControl {
+pub enum EqBitControl {
     On(EqChannel),
-    Param {
-        channel: EqChannel,
-        band: EqBand,
-        knob: EqKnob
-    },
     Attenuator(Channel), // sans Returns
 }
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqBand {
-    Low,
-    LoMid,
-    HiMid,
-    High,
+    Low(EqChannel),
+    LoMid(EqChannel),
+    HiMid(EqChannel),
+    High(EqChannel),
 }
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqChannel {
@@ -114,9 +109,9 @@ impl EqChannel {
 }
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqKnob {
-    F,
-    G,
-    Q,
+    F(EqBand),
+    G(EqBand),
+    Q(EqBand),
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
@@ -166,6 +161,7 @@ impl Channel {
 pub enum BitControl {
     ChannelEnable(Channel),
     BusEnable(Bus),
+    //EqControl(EqBitControl),
 }
 impl BitControl { // TODO: Move to BiHashMap
     pub fn to_address(&self) -> (u16, u8) {

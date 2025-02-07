@@ -1,4 +1,4 @@
-use crate::controller::{Address, Channel, BusSend, EqControl, EqChannel, EqBand, EqKnob, Bus};
+use crate::controller::{Address, Channel, BusSend, EqChannel, EqBand, EqKnob, Bus};
 use crate::STATE_MAP;
 
 pub fn init_state_map() {
@@ -32,17 +32,19 @@ pub fn init_state_map() {
         for band in vec![EqBand::Low, EqBand::LoMid, EqBand::HiMid, EqBand::High] {
             for eq_channel in 0u8..=21 {
                 if let Some(channel) = EqChannel::from_u8(eq_channel) {
-                    map.insert(i, Address::EqControl(EqControl::Param {
-                        channel,
-                        band: band.clone(),
-                        knob: knob.clone(),
-                    }));
+                    map.insert(i, Address::EqControl(knob(band(channel))));
                 }
-
                 i += 1;
             }
         }
     }
+
+    // TODO: Make this work:
+    // EQ On's
+    // for eq_channel in 0u8..=20 {
+    //     let channel = EqChannel::from_u8(eq_channel).unwrap();
+    //     map.insert(0x11D + eq_channel as u16, EqBitControl::from_u8(i));
+    // }
 
     // Master volumes
     map.insert(0x1C, Address::BusMaster(Bus::Aux1));
