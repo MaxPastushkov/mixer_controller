@@ -12,15 +12,14 @@ pub struct BitControlVal {
     pub value: bool,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Address {
     BusSend(BusSend),
     BusMaster(Bus),
     EqControl(EqControl),
-    OnControl(OnControl),
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum BusSend {
     StereoOut(Channel),
     Aux1(Channel),
@@ -31,7 +30,7 @@ pub enum BusSend {
     Effect2(Channel), // Does not have Return2
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Bus {
     StereoOut,
     Aux1,
@@ -42,7 +41,7 @@ pub enum Bus {
     Effect2,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqControl {
     On(EqChannel),
     Param {
@@ -52,14 +51,14 @@ pub enum EqControl {
     },
     Attenuator(Channel), // sans Returns
 }
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqBand {
     Low,
     LoMid,
     HiMid,
     High,
 }
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqChannel {
     CH1,
     CH2,
@@ -111,14 +110,14 @@ impl EqChannel {
         }
     }
 }
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqKnob {
     F,
     G,
     Q,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Channel {
     CH1 = 0,
     CH2 = 1,
@@ -161,7 +160,7 @@ impl Channel {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum OnControl {
     Channel(EqChannel),
     Effect1Send,
@@ -201,35 +200,35 @@ impl OnControl { // TODO: Move to BiHashMap
             OnControl::Effect2Send => (0xB3, 0b001),
         }
     }
-    pub fn from_address(address: (u16, u8)) -> Option<Self> {
+    pub fn from_address(address: (u16, Option<u8>)) -> Option<Self> {
         match address {
-            (0xB0, 0b000) => Some(Self::Channel(EqChannel::CH1)),
-            (0xB0, 0b001) => Some(Self::Channel(EqChannel::CH2)),
-            (0xB0, 0b010) => Some(Self::Channel(EqChannel::CH3)),
-            (0xB0, 0b011) => Some(Self::Channel(EqChannel::CH4)),
-            (0xB0, 0b100) => Some(Self::Channel(EqChannel::CH5)),
-            (0xB0, 0b101) => Some(Self::Channel(EqChannel::CH6)),
-            (0xB0, 0b110) => Some(Self::Channel(EqChannel::CH7)),
-            (0xB0, 0b111) => Some(Self::Channel(EqChannel::CH8)),
+            (0xB0, Some(0b000) | None) => Some(Self::Channel(EqChannel::CH1)),
+            (0xB0, Some(0b001)) => Some(Self::Channel(EqChannel::CH2)),
+            (0xB0, Some(0b010)) => Some(Self::Channel(EqChannel::CH3)),
+            (0xB0, Some(0b011)) => Some(Self::Channel(EqChannel::CH4)),
+            (0xB0, Some(0b100)) => Some(Self::Channel(EqChannel::CH5)),
+            (0xB0, Some(0b101)) => Some(Self::Channel(EqChannel::CH6)),
+            (0xB0, Some(0b110)) => Some(Self::Channel(EqChannel::CH7)),
+            (0xB0, Some(0b111)) => Some(Self::Channel(EqChannel::CH8)),
 
-            (0xB1, 0b000) => Some(Self::Channel(EqChannel::CH9)),
-            (0xB1, 0b001) => Some(Self::Channel(EqChannel::CH10)),
-            (0xB1, 0b010) => Some(Self::Channel(EqChannel::CH11)),
-            (0xB1, 0b011) => Some(Self::Channel(EqChannel::CH12)),
-            (0xB1, 0b100) => Some(Self::Channel(EqChannel::CH1314)),
-            (0xB1, 0b101) => Some(Self::Channel(EqChannel::CH1516)),
-            (0xB1, 0b110) => Some(Self::Channel(EqChannel::Return1)),
-            (0xB1, 0b111) => Some(Self::Channel(EqChannel::Return2)),
+            (0xB1, Some(0b000) | None) => Some(Self::Channel(EqChannel::CH9)),
+            (0xB1, Some(0b001)) => Some(Self::Channel(EqChannel::CH10)),
+            (0xB1, Some(0b010)) => Some(Self::Channel(EqChannel::CH11)),
+            (0xB1, Some(0b011)) => Some(Self::Channel(EqChannel::CH12)),
+            (0xB1, Some(0b100)) => Some(Self::Channel(EqChannel::CH1314)),
+            (0xB1, Some(0b101)) => Some(Self::Channel(EqChannel::CH1516)),
+            (0xB1, Some(0b110)) => Some(Self::Channel(EqChannel::Return1)),
+            (0xB1, Some(0b111)) => Some(Self::Channel(EqChannel::Return2)),
 
-            (0xB2, 0b000) => Some(Self::Channel(EqChannel::Aux1)),
-            (0xB2, 0b001) => Some(Self::Channel(EqChannel::Aux2)),
-            (0xB2, 0b010) => Some(Self::Channel(EqChannel::Aux3)),
-            (0xB2, 0b011) => Some(Self::Channel(EqChannel::Aux4)),
+            (0xB2, Some(0b000) | None) => Some(Self::Channel(EqChannel::Aux1)),
+            (0xB2, Some(0b001)) => Some(Self::Channel(EqChannel::Aux2)),
+            (0xB2, Some(0b010)) => Some(Self::Channel(EqChannel::Aux3)),
+            (0xB2, Some(0b011)) => Some(Self::Channel(EqChannel::Aux4)),
 
-            (0xB4, 0b111) => Some(Self::Channel(EqChannel::StereoOut)),
+            (0xB4, Some(0b111) | None) => Some(Self::Channel(EqChannel::StereoOut)),
 
-            (0xB3, 0b000) => Some(Self::Effect1Send),
-            (0xB3, 0b001) => Some(Self::Effect2Send),
+            (0xB3, Some(0b000) | None) => Some(Self::Effect1Send),
+            (0xB3, Some(0b001)) => Some(Self::Effect2Send),
 
             _ => None,
         }

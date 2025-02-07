@@ -133,7 +133,10 @@ function updateControl(obj) {
 
     let control = document.getElementById(JSON.stringify(obj.control));
     if (control) {
-        control.value = obj.value;
+        if (typeof obj.value === "boolean") {
+            control.checked = obj.value;
+        } else {
+            control.value = obj.value;        }
     } else {
         console.warn("Control not found: " + JSON.stringify(obj.control));
     }
@@ -167,3 +170,11 @@ function initControls() {
 }
 
 window.onload = initControls;
+
+const evtSource = new EventSource("/events");
+evtSource.onmessage = (event) => {
+    try {
+        updateControl(JSON.parse(event.data));
+        console.log("Received event: " + event.data);
+    } catch {}
+}

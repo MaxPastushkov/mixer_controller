@@ -4,30 +4,29 @@ mod broadcast;
 
 use midir::{MidiOutput, MidiInput};
 //use controllers::*;
-use actix_web::{post, get, middleware::Logger, web, App, HttpServer, HttpResponse, Responder};
+use actix_web::{post, get, middleware::Logger, web, App, HttpServer, HttpResponse, Responder, HttpRequest};
 use actix_cors::Cors;
 use bimap::BiHashMap;
 use crate::controller::*;
 use crate::state_map::init_state_map;
 use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
-use serde::Serialize;
 use crate::broadcast::Broadcaster;
+use futures::executor;
 
 static STATE_MAP: Lazy<Mutex<BiHashMap<u16, Address>>> = Lazy::new(|| Mutex::new(BiHashMap::new()));
 
-fn send_midi_data(data: [u8; 4]) {
+fn send_midi_data(data: &[u8]) {
     let midi_out = MidiOutput::new("midir").unwrap();
     let out_port = &midi_out.ports()[1];
     let mut conn_out = midi_out.connect(&out_port, "midir-test").unwrap();
 
-    let mut message: [u8; 10] = [0xF0, 0x43, 0x10, 0x3E, 0x04, 0x00, 0x00, 0x00, 0x00, 0xF7];
-    message[5] = data[0];
-    message[6] = data[1];
-    message[7] = data[2];
-    message[8] = data[3];
+    if data.len() == 4 {
+        let _ = conn_out.send(&[0xF0, 0x43, 0x10, 0x3E, 0x04, data[0], data[1], data[2], data[3], 0xF7]);
+    } else {
+        let _ = conn_out.send(data);
+    }
 
-    let _ = conn_out.send(&message);
     conn_out.close();
 }
 
@@ -41,7 +40,10 @@ async fn update_u7_value(body: web::Json<U7ControlVal>) -> HttpResponse {
     data[2] = (addr & 0x7F) as u8; // Lower 7 bits
     data[3] = body.value;
 
-    send_midi_data(data);
+    send_midi_data(&data);
+
+    // TODO: Index clients in order for this to work:
+    //broadcaster.broadcast(serde_json::to_string(&body).unwrap().as_str()).await;
 
     HttpResponse::Ok().finish()
 }
@@ -56,13 +58,20 @@ async fn update_bit_value(body: web::Json<BitControlVal>) -> HttpResponse {
     data[2] = (group & 0x7F) as u8; // Lower 7 bits
     data[3] = id | (if body.value { 0b1000 } else { 0b0000 });
 
-    send_midi_data(data);
+    send_midi_data(&data);
 
     HttpResponse::Ok().finish()
 }
 
 #[get("/events")]
-async fn event_stream(broadcaster: web::Data<Broadcaster>) -> impl Responder {
+async fn event_stream(req: HttpRequest, broadcaster: web::Data<Broadcaster>) -> impl Responder {
+    if let Some(val) = req.peer_addr() {
+        println!("New SSE client: {:?}", val.ip());
+    }
+
+    // Get initial state
+    send_midi_data(&[0xF0, 0x43, 0x20, 0x7E, 0x4C, 0x4D, 0x20, 0x20, 0x38, 0x42, 0x33, 0x34, 0x4D, 0x7F, 0xF7]);
+
     broadcaster.new_client().await
 }
 
@@ -77,11 +86,67 @@ async fn main() -> std::io::Result<()> {
     let midi_in = MidiInput::new("midir").unwrap();
     let in_port = &midi_in.ports()[1];
 
+    let broadcaster_ptr = Arc::clone(&broadcaster);
+
     let _conn_in = midi_in.connect(
         &in_port,
         "midir-in",
-        |stamp, message, _| {
-            let _ = broadcaster.broadcast("Test");
+        move |_, message, _| {
+
+            println!("Received MIDI Data: {:02X?}", message);
+
+            if message.len() == 10 {
+                let output: String = match message[5] {
+                    0x10 => {
+                        let addr: u16 = ((message[6] as u16) << 7) | ((message[7] as u16) & 0x7F);
+                        let control: Address = *STATE_MAP.lock().unwrap().get_by_left(&addr).unwrap();
+                        let obj = U7ControlVal {
+                            control,
+                            value: message[8],
+                        };
+                        serde_json::to_string(&obj).unwrap()
+                    },
+                    0x40 => {
+                        let group: u16 = ((message[6] as u16) << 7) | ((message[7] as u16) & 0x7F);
+                        let bits: u8 = message[8] & 0b0111;
+                        let value: bool = (message[8] & 0b1000) > 0;
+                        let obj = BitControlVal {
+                            control: OnControl::from_address((group, Some(bits))).unwrap(),
+                            value,
+                        };
+                        serde_json::to_string(&obj).unwrap()
+                    }
+                    _ => "Internal error".to_string()
+                };
+
+                executor::block_on(broadcaster_ptr.broadcast(output.as_str()));
+
+            } else if message.len() >= 30 && message[3] == 0x7E && message[14] == 0x4D {
+                // Response from bulk scene data
+                for i in 0..(message.len()-32)/2 {
+                    let value: u8 = message[i*2 + 30] << 4 | message[i*2 + 31];
+                    if let Some(address) = STATE_MAP.lock().unwrap().get_by_left(&(i as u16 + 0x0C)) {
+                        let obj = U7ControlVal {
+                            control: *address,
+                            value,
+                        };
+                        executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
+
+                    } else if let Some(_) = OnControl::from_address((i as u16 + 0x0C, None)) {
+
+                        for j in 0u8..=0b111 {
+                            if let Some(control) = OnControl::from_address((i as u16 + 0x0C, Some(j))) {
+                                let obj = BitControlVal {
+                                    control,
+                                    value: value & (1 << j) != 0
+                                };
+                                executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
+                                // TODO: Make this line only run once
+                            }
+                        }
+                    }
+                }
+            }
         },
         (),
     );
@@ -113,7 +178,7 @@ async fn main() -> std::io::Result<()> {
     //     knob: EqKnob::F,
     // }))?);
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
 
         let cors = Cors::default()
             .allow_any_method()
@@ -126,7 +191,8 @@ async fn main() -> std::io::Result<()> {
             .service(update_u7_value)
             .service(update_bit_value)
             .service(event_stream)
-            .wrap(Logger::default)
+            .service(actix_files::Files::new("/", "./static").index_file("index.html"))
+            .wrap(Logger::default())
     })
         .bind("127.0.0.1:8080")?
         .run()
