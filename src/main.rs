@@ -9,16 +9,17 @@ use actix_cors::Cors;
 use bimap::BiHashMap;
 use crate::controller::*;
 use crate::state_map::init_state_map;
-use once_cell::sync::Lazy;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, LazyLock};
 use crate::broadcast::Broadcaster;
 use futures::executor;
 
-static STATE_MAP: Lazy<Mutex<BiHashMap<u16, Address>>> = Lazy::new(|| Mutex::new(BiHashMap::new()));
+const MIDI_PORT: usize = 0;
+
+static STATE_MAP: LazyLock<Mutex<BiHashMap<u16, Address>>> = LazyLock::new(|| Mutex::new(BiHashMap::new()));
 
 fn send_midi_data(data: &[u8]) {
     let midi_out = MidiOutput::new("midir").unwrap();
-    let out_port = &midi_out.ports()[1];
+    let out_port = &midi_out.ports()[MIDI_PORT];
     let mut conn_out = midi_out.connect(&out_port, "midir-test").unwrap();
 
     if data.len() == 4 {
@@ -84,7 +85,7 @@ async fn main() -> std::io::Result<()> {
     init_state_map();
 
     let midi_in = MidiInput::new("midir").unwrap();
-    let in_port = &midi_in.ports()[1];
+    let in_port = &midi_in.ports()[MIDI_PORT];
 
     let broadcaster_ptr = Arc::clone(&broadcaster);
 
@@ -132,7 +133,7 @@ async fn main() -> std::io::Result<()> {
                         };
                         executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
 
-                    } else if let Some(_) = BitControl::from_address((i as u16 + 0x0C, None)) {
+                    } else if BitControl::from_address((i as u16 + 0x0C, None)).is_some() {
 
                         for j in 0u8..=0b111 {
                             if let Some(control) = BitControl::from_address((i as u16 + 0x0C, Some(j))) {

@@ -6,7 +6,7 @@ use actix_web_lab::{
     util::InfallibleStream,
 };
 use futures_util::future;
-use parking_lot::Mutex;
+use std::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
@@ -46,7 +46,7 @@ impl Broadcaster {
 
     /// Removes all non-responsive clients from broadcast list.
     async fn remove_stale_clients(&self) {
-        let clients = self.inner.lock().clients.clone();
+        let clients = self.inner.lock().unwrap().clients.clone();
 
         let mut ok_clients = Vec::new();
 
@@ -60,7 +60,7 @@ impl Broadcaster {
             }
         }
 
-        self.inner.lock().clients = ok_clients;
+        self.inner.lock().unwrap().clients = ok_clients;
     }
 
     /// Registers client with broadcaster, returning an SSE response body.
@@ -69,14 +69,14 @@ impl Broadcaster {
 
         tx.send(sse::Data::new("connected").into()).await.unwrap();
 
-        self.inner.lock().clients.push(tx);
+        self.inner.lock().unwrap().clients.push(tx);
 
         Sse::from_infallible_receiver(rx)
     }
 
     /// Broadcasts `msg` to all clients.
     pub async fn broadcast(&self, msg: &str) {
-        let clients = self.inner.lock().clients.clone();
+        let clients = self.inner.lock().unwrap().clients.clone();
 
         let send_futures = clients
             .iter()

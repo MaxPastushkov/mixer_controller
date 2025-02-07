@@ -1270,8 +1270,6 @@ dependencies = [
  "futures",
  "futures-util",
  "midir",
- "once_cell",
- "parking_lot",
  "serde",
  "serde_json",
  "tokio",
