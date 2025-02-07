@@ -111,7 +111,7 @@ async fn main() -> std::io::Result<()> {
                         let bits: u8 = message[8] & 0b0111;
                         let value: bool = (message[8] & 0b1000) > 0;
                         let obj = BitControlVal {
-                            control: OnControl::from_address((group, Some(bits))).unwrap(),
+                            control: BitControl::from_address((group, Some(bits))).unwrap(),
                             value,
                         };
                         serde_json::to_string(&obj).unwrap()
@@ -132,10 +132,10 @@ async fn main() -> std::io::Result<()> {
                         };
                         executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
 
-                    } else if let Some(_) = OnControl::from_address((i as u16 + 0x0C, None)) {
+                    } else if let Some(_) = BitControl::from_address((i as u16 + 0x0C, None)) {
 
                         for j in 0u8..=0b111 {
-                            if let Some(control) = OnControl::from_address((i as u16 + 0x0C, Some(j))) {
+                            if let Some(control) = BitControl::from_address((i as u16 + 0x0C, Some(j))) {
                                 let obj = BitControlVal {
                                     control,
                                     value: value & (1 << j) != 0

@@ -8,7 +8,7 @@ pub struct U7ControlVal {
 
 #[derive(Serialize, Deserialize)]
 pub struct BitControlVal {
-    pub control: OnControl,
+    pub control: BitControl,
     pub value: bool,
 }
 
@@ -161,74 +161,75 @@ impl Channel {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum OnControl {
-    Channel(EqChannel),
-    Effect1Send,
-    Effect2Send,
+pub enum BitControl {
+    ChannelEnable(Channel),
+    BusEnable(Bus),
 }
-impl OnControl { // TODO: Move to BiHashMap
+impl BitControl { // TODO: Move to BiHashMap
     pub fn to_address(&self) -> (u16, u8) {
         match self {
-            OnControl::Channel(c) => match c {
-                EqChannel::CH1 => (0xB0, 0b000),
-                EqChannel::CH2 => (0xB0, 0b001),
-                EqChannel::CH3 => (0xB0, 0b010),
-                EqChannel::CH4 => (0xB0, 0b011),
-                EqChannel::CH5 => (0xB0, 0b100),
-                EqChannel::CH6 => (0xB0, 0b101),
-                EqChannel::CH7 => (0xB0, 0b110),
-                EqChannel::CH8 => (0xB0, 0b111),
+            BitControl::ChannelEnable(c) => match c {
+                Channel::CH1 => (0xB0, 0b000),
+                Channel::CH2 => (0xB0, 0b001),
+                Channel::CH3 => (0xB0, 0b010),
+                Channel::CH4 => (0xB0, 0b011),
+                Channel::CH5 => (0xB0, 0b100),
+                Channel::CH6 => (0xB0, 0b101),
+                Channel::CH7 => (0xB0, 0b110),
+                Channel::CH8 => (0xB0, 0b111),
 
-                EqChannel::CH9 => (0xB1, 0b000),
-                EqChannel::CH10 => (0xB1, 0b001),
-                EqChannel::CH11 => (0xB1, 0b010),
-                EqChannel::CH12 => (0xB1, 0b011),
-                EqChannel::CH1314 => (0xB1, 0b100),
-                EqChannel::CH1516 => (0xB1, 0b101),
-                EqChannel::Return1 => (0xB1, 0b110),
-                EqChannel::Return2 => (0xB1, 0b111),
-
-                EqChannel::Aux1 => (0xB2, 0b000),
-                EqChannel::Aux2 => (0xB2, 0b001),
-                EqChannel::Aux3 => (0xB2, 0b010),
-                EqChannel::Aux4 => (0xB2, 0b011),
-
-                EqChannel::StereoOut => (0xB4, 0b111),
+                Channel::CH9 => (0xB1, 0b000),
+                Channel::CH10 => (0xB1, 0b001),
+                Channel::CH11 => (0xB1, 0b010),
+                Channel::CH12 => (0xB1, 0b011),
+                Channel::CH1314 => (0xB1, 0b100),
+                Channel::CH1516 => (0xB1, 0b101),
+                Channel::Return1 => (0xB1, 0b110),
+                Channel::Return2 => (0xB1, 0b111),
             },
+            BitControl::BusEnable(b) => match b {
 
-            OnControl::Effect1Send => (0xB3, 0b000),
-            OnControl::Effect2Send => (0xB3, 0b001),
+                Bus::Aux1 => (0xB2, 0b000),
+                Bus::Aux2 => (0xB2, 0b001),
+                Bus::Aux3 => (0xB2, 0b010),
+                Bus::Aux4 => (0xB2, 0b011),
+
+                Bus::Effect1 => (0xB3, 0b000),
+                Bus::Effect2 => (0xB3, 0b001),
+
+                Bus::StereoOut => (0xB4, 0b111),
+            },
         }
     }
     pub fn from_address(address: (u16, Option<u8>)) -> Option<Self> {
         match address {
-            (0xB0, Some(0b000) | None) => Some(Self::Channel(EqChannel::CH1)),
-            (0xB0, Some(0b001)) => Some(Self::Channel(EqChannel::CH2)),
-            (0xB0, Some(0b010)) => Some(Self::Channel(EqChannel::CH3)),
-            (0xB0, Some(0b011)) => Some(Self::Channel(EqChannel::CH4)),
-            (0xB0, Some(0b100)) => Some(Self::Channel(EqChannel::CH5)),
-            (0xB0, Some(0b101)) => Some(Self::Channel(EqChannel::CH6)),
-            (0xB0, Some(0b110)) => Some(Self::Channel(EqChannel::CH7)),
-            (0xB0, Some(0b111)) => Some(Self::Channel(EqChannel::CH8)),
+            (0xB0, Some(0b000) | None) => Some(Self::ChannelEnable(Channel::CH1)),
+            (0xB0, Some(0b001))        => Some(Self::ChannelEnable(Channel::CH2)),
+            (0xB0, Some(0b010))        => Some(Self::ChannelEnable(Channel::CH3)),
+            (0xB0, Some(0b011))        => Some(Self::ChannelEnable(Channel::CH4)),
+            (0xB0, Some(0b100))        => Some(Self::ChannelEnable(Channel::CH5)),
+            (0xB0, Some(0b101))        => Some(Self::ChannelEnable(Channel::CH6)),
+            (0xB0, Some(0b110))        => Some(Self::ChannelEnable(Channel::CH7)),
+            (0xB0, Some(0b111))        => Some(Self::ChannelEnable(Channel::CH8)),
 
-            (0xB1, Some(0b000) | None) => Some(Self::Channel(EqChannel::CH9)),
-            (0xB1, Some(0b001)) => Some(Self::Channel(EqChannel::CH10)),
-            (0xB1, Some(0b010)) => Some(Self::Channel(EqChannel::CH11)),
-            (0xB1, Some(0b011)) => Some(Self::Channel(EqChannel::CH12)),
-            (0xB1, Some(0b100)) => Some(Self::Channel(EqChannel::CH1314)),
-            (0xB1, Some(0b101)) => Some(Self::Channel(EqChannel::CH1516)),
-            (0xB1, Some(0b110)) => Some(Self::Channel(EqChannel::Return1)),
-            (0xB1, Some(0b111)) => Some(Self::Channel(EqChannel::Return2)),
+            (0xB1, Some(0b000) | None) => Some(Self::ChannelEnable(Channel::CH9)),
+            (0xB1, Some(0b001))        => Some(Self::ChannelEnable(Channel::CH10)),
+            (0xB1, Some(0b010))        => Some(Self::ChannelEnable(Channel::CH11)),
+            (0xB1, Some(0b011))        => Some(Self::ChannelEnable(Channel::CH12)),
+            (0xB1, Some(0b100))        => Some(Self::ChannelEnable(Channel::CH1314)),
+            (0xB1, Some(0b101))        => Some(Self::ChannelEnable(Channel::CH1516)),
+            (0xB1, Some(0b110))        => Some(Self::ChannelEnable(Channel::Return1)),
+            (0xB1, Some(0b111))        => Some(Self::ChannelEnable(Channel::Return2)),
 
-            (0xB2, Some(0b000) | None) => Some(Self::Channel(EqChannel::Aux1)),
-            (0xB2, Some(0b001)) => Some(Self::Channel(EqChannel::Aux2)),
-            (0xB2, Some(0b010)) => Some(Self::Channel(EqChannel::Aux3)),
-            (0xB2, Some(0b011)) => Some(Self::Channel(EqChannel::Aux4)),
+            (0xB2, Some(0b000) | None) => Some(Self::BusEnable(Bus::Aux1)),
+            (0xB2, Some(0b001))        => Some(Self::BusEnable(Bus::Aux2)),
+            (0xB2, Some(0b010))        => Some(Self::BusEnable(Bus::Aux3)),
+            (0xB2, Some(0b011))        => Some(Self::BusEnable(Bus::Aux4)),
 
-            (0xB4, Some(0b111) | None) => Some(Self::Channel(EqChannel::StereoOut)),
+            (0xB4, Some(0b111) | None) => Some(Self::BusEnable(Bus::StereoOut)),
 
-            (0xB3, Some(0b000) | None) => Some(Self::Effect1Send),
-            (0xB3, Some(0b001)) => Some(Self::Effect2Send),
+            (0xB3, Some(0b000) | None) => Some(Self::BusEnable(Bus::Effect1)),
+            (0xB3, Some(0b001))        => Some(Self::BusEnable(Bus::Effect2)),
 
             _ => None,
         }

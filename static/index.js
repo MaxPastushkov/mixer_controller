@@ -1,97 +1,75 @@
 
-class Bus {
-    CH1 = 0;
-    CH2 = 0;
-    CH3 = 0;
-    CH4 = 0;
-    CH5 = 0;
-    CH6 = 0;
-    CH7 = 0;
-    CH8 = 0;
-    CH9 = 0;
-    CH10 = 0;
-    CH11 = 0;
-    CH12 = 0;
-    CH1314 = 0;
-    CH1516 = 0;
-    Return1 = 0;
-    Return2 = 0;
+class Busses {
+    StereoOut;
+    Aux1;
+    Aux2;
+    Aux3;
+    Aux4;
+    Effect1;
+    Effect2;
+
+    constructor(initValue) {
+        this.StereoOut = initValue;
+        this.Aux1 = initValue;
+        this.Aux2 = initValue;
+        this.Aux3 = initValue;
+        this.Aux4 = initValue;
+        this.Effect1 = initValue;
+        this.Effect2 = initValue;
+    }
 }
 
-class EqControl {
+class Channels {
+    CH1;
+    CH2;
+    CH3;
+    CH4;
+    CH5;
+    CH6;
+    CH7;
+    CH8;
+    CH9;
+    CH10;
+    CH11;
+    CH12;
+    CH1314;
+    CH1516;
+    Return1;
+    Return2;
 
-}
-
-class EqBus {
-    CH1 = 0;
-    CH2 = 0;
-    CH3 = 0;
-    CH4 = 0;
-    CH5 = 0;
-    CH6 = 0;
-    CH7 = 0;
-    CH8 = 0;
-    CH9 = 0;
-    CH10 = 0;
-    CH11 = 0;
-    CH12 = 0;
-    CH1314 = 0;
-    CH1516 = 0;
-    Return1 = 0;
-    Return2 = 0;
-    StereoOut = 0;
-    Aux1 = 0;
-    Aux2 = 0;
-    Aux3 = 0;
-    Aux4 = 0;
-}
-
-class OnControl {
-    CH1 = false;
-    CH2 = false;
-    CH3 = false;
-    CH4 = false;
-    CH5 = false;
-    CH6 = false;
-    CH7 = false;
-    CH8 = false;
-    CH9 = false;
-    CH10 = false;
-    CH11 = false;
-    CH12 = false;
-    CH1314 = false;
-    CH1516 = false;
-    Return1 = false;
-    Return2 = false;
-    StereoOut = false;
-    Aux1 = false;
-    Aux2 = false;
-    Aux3 = false;
-    Aux4 = false;
+    constructor(initValue) {
+        this.CH1 = initValue;
+        this.CH2 = initValue;
+        this.CH3 = initValue;
+        this.CH4 = initValue;
+        this.CH5 = initValue;
+        this.CH6 = initValue;
+        this.CH7 = initValue;
+        this.CH8 = initValue;
+        this.CH9 = initValue;
+        this.CH10 = initValue;
+        this.CH11 = initValue;
+        this.CH12 = initValue;
+        this.CH1314 = initValue;
+        this.CH1516 = initValue;
+        this.Return1 = initValue;
+        this.Return2 = initValue;
+    }
 }
 
 let mixerState = {
     BusSend: {
-        StereoOut: new Bus(),
-        Aux1: new Bus(),
-        Aux2: new Bus(),
-        Aux3: new Bus(),
-        Aux4: new Bus(),
-        Effect1: new Bus(),
-        Effect2: new Bus()
+        StereoOut: new Channels(0),
+        Aux1: new Channels(0),
+        Aux2: new Channels(0),
+        Aux3: new Channels(0),
+        Aux4: new Channels(0),
+        Effect1: new Channels(0),
+        Effect2: new Channels(0)
     },
-    BusMaster: {
-        StereoOut: 0,
-        Aux1: 0,
-        Aux2: 0,
-        Aux3: 0,
-        Aux4: 0,
-        Effect1: 0,
-        Effect2: 0
-    },
-    Channel: new OnControl(),
-    Effect1Send: false,
-    Effect2Send: false
+    BusMaster: new Busses(0),
+    ChannelEnable: new Channels(false),
+    BusEnable: new Busses(false)
 };
 delete mixerState.BusSend.Effect1.Return1;
 delete mixerState.BusSend.Effect2.Return2;
