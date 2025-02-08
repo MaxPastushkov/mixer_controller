@@ -44,11 +44,6 @@ pub enum Bus {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum EqBitControl {
-    On(EqChannel),
-    Attenuator(Channel), // sans Returns
-}
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqBand {
     Low(EqChannel),
     LoMid(EqChannel),
@@ -57,52 +52,33 @@ pub enum EqBand {
 }
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum EqChannel {
-    CH1,
-    CH2,
-    CH3,
-    CH4,
-    CH5,
-    CH6,
-    CH7,
-    CH8,
-    CH9,
-    CH10,
-    CH11,
-    CH12,
-    CH1314,
-    CH1516,
-    Return1,
-    Return2,
-    Aux1,
-    Aux2,
-    Aux3,
-    Aux4,
-    StereoOut,
+    Channel(Channel),
+    Bus(Bus), // Bus cannot have Effect 1 or 2
 }
 impl EqChannel {
     pub fn from_u8(value: u8) -> Option<EqChannel> {
         match value {
-            0 => Some(EqChannel::CH1),
-            1 => Some(EqChannel::CH2),
-            2 => Some(EqChannel::CH3),
-            3 => Some(EqChannel::CH4),
-            4 => Some(EqChannel::CH5),
-            5 => Some(EqChannel::CH6),
-            6 => Some(EqChannel::CH7),
-            7 => Some(EqChannel::CH8),
-            8 => Some(EqChannel::CH9),
-            9 => Some(EqChannel::CH10),
-            10 => Some(EqChannel::CH11),
-            11 => Some(EqChannel::CH12),
-            12 => Some(EqChannel::CH1314),
-            13 => Some(EqChannel::CH1516),
-            14 => Some(EqChannel::Return1),
-            15 => Some(EqChannel::Return2),
-            16 => Some(EqChannel::Aux1),
-            17 => Some(EqChannel::Aux2),
-            18 => Some(EqChannel::Aux3),
-            19 => Some(EqChannel::Aux4),
-            20 => Some(EqChannel::StereoOut),
+            0 => Some(EqChannel::Channel(Channel::CH1)),
+            1 => Some(EqChannel::Channel(Channel::CH2)),
+            2 => Some(EqChannel::Channel(Channel::CH3)),
+            3 => Some(EqChannel::Channel(Channel::CH4)),
+            4 => Some(EqChannel::Channel(Channel::CH5)),
+            5 => Some(EqChannel::Channel(Channel::CH6)),
+            6 => Some(EqChannel::Channel(Channel::CH7)),
+            7 => Some(EqChannel::Channel(Channel::CH8)),
+            8 => Some(EqChannel::Channel(Channel::CH9)),
+            9 => Some(EqChannel::Channel(Channel::CH10)),
+            10 => Some(EqChannel::Channel(Channel::CH11)),
+            11 => Some(EqChannel::Channel(Channel::CH12)),
+            12 => Some(EqChannel::Channel(Channel::CH1314)),
+            13 => Some(EqChannel::Channel(Channel::CH1516)),
+            14 => Some(EqChannel::Channel(Channel::Return1)),
+            15 => Some(EqChannel::Channel(Channel::Return2)),
+            16 => Some(EqChannel::Bus(Bus::Aux1)),
+            17 => Some(EqChannel::Bus(Bus::Aux2)),
+            18 => Some(EqChannel::Bus(Bus::Aux3)),
+            19 => Some(EqChannel::Bus(Bus::Aux4)),
+            20 => Some(EqChannel::Bus(Bus::StereoOut)),
             _ => None,
         }
     }
@@ -161,75 +137,117 @@ impl Channel {
 pub enum BitControl {
     ChannelEnable(Channel),
     BusEnable(Bus),
-    //EqControl(EqBitControl),
+    EqEnable(EqChannel),
 }
 impl BitControl { // TODO: Move to BiHashMap
     pub fn to_address(&self) -> (u16, u8) {
         match self {
-            BitControl::ChannelEnable(c) => match c {
-                Channel::CH1 => (0xB0, 0b000),
-                Channel::CH2 => (0xB0, 0b001),
-                Channel::CH3 => (0xB0, 0b010),
-                Channel::CH4 => (0xB0, 0b011),
-                Channel::CH5 => (0xB0, 0b100),
-                Channel::CH6 => (0xB0, 0b101),
-                Channel::CH7 => (0xB0, 0b110),
-                Channel::CH8 => (0xB0, 0b111),
 
-                Channel::CH9 => (0xB1, 0b000),
-                Channel::CH10 => (0xB1, 0b001),
-                Channel::CH11 => (0xB1, 0b010),
-                Channel::CH12 => (0xB1, 0b011),
-                Channel::CH1314 => (0xB1, 0b100),
-                Channel::CH1516 => (0xB1, 0b101),
-                Channel::Return1 => (0xB1, 0b110),
-                Channel::Return2 => (0xB1, 0b111),
+            Self::ChannelEnable(c) | Self::EqEnable(EqChannel::Channel(c)) => {
+                let (offset, channel_bits) = match c {
+                    Channel::CH1     => (0, 0b000),
+                    Channel::CH2     => (0, 0b001),
+                    Channel::CH3     => (0, 0b010),
+                    Channel::CH4     => (0, 0b011),
+                    Channel::CH5     => (0, 0b100),
+                    Channel::CH6     => (0, 0b101),
+                    Channel::CH7     => (0, 0b110),
+                    Channel::CH8     => (0, 0b111),
+                    Channel::CH9     => (1, 0b000),
+                    Channel::CH10    => (1, 0b001),
+                    Channel::CH11    => (1, 0b010),
+                    Channel::CH12    => (1, 0b011),
+                    Channel::CH1314  => (1, 0b100),
+                    Channel::CH1516  => (1, 0b101),
+                    Channel::Return1 => (1, 0b110),
+                    Channel::Return2 => (1, 0b111),
+                };
+                match self {
+                    Self::ChannelEnable(_) => (offset + 0x0B0, channel_bits),
+                    Self::EqEnable(EqChannel::Channel(_)) => (offset + 0x11C, channel_bits),
+                    _ => unreachable!(),
+                }
             },
-            BitControl::BusEnable(b) => match b {
+            Self::BusEnable(b) | Self::EqEnable(EqChannel::Bus(b)) => {
+                let bus_bits = match b {
+                    Bus::Aux1      => 0b000,
+                    Bus::Aux2      => 0b001,
+                    Bus::Aux3      => 0b010,
+                    Bus::Aux4      => 0b011,
+                    Bus::Effect1   => 0b000,
+                    Bus::Effect2   => 0b001,
+                    Bus::StereoOut => 0b111,
+                };
+                match self {
 
-                Bus::Aux1 => (0xB2, 0b000),
-                Bus::Aux2 => (0xB2, 0b001),
-                Bus::Aux3 => (0xB2, 0b010),
-                Bus::Aux4 => (0xB2, 0b011),
+                    Self::BusEnable(_) => (match b {
+                        Bus::Aux1 | Bus::Aux2 | Bus::Aux3 | Bus::Aux4 => 0x0B2,
+                        Bus::Effect1 | Bus::Effect2 => 0x0B3,
+                        Bus::StereoOut => 0x0B4,
+                    }, bus_bits),
 
-                Bus::Effect1 => (0xB3, 0b000),
-                Bus::Effect2 => (0xB3, 0b001),
+                    Self::EqEnable(EqChannel::Bus(_)) => (match b {
+                        Bus::Aux1 | Bus::Aux2 | Bus::Aux3 | Bus::Aux4 | Bus::StereoOut => 0x011F,
+                        _ => panic!(), // Invalid configuration for EQ Bus
+                    }, bus_bits),
 
-                Bus::StereoOut => (0xB4, 0b111),
-            },
+                    _ => unreachable!(),
+                }
+            }
         }
     }
-    pub fn from_address(address: (u16, Option<u8>)) -> Option<Self> {
-        match address {
-            (0xB0, Some(0b000) | None) => Some(Self::ChannelEnable(Channel::CH1)),
-            (0xB0, Some(0b001))        => Some(Self::ChannelEnable(Channel::CH2)),
-            (0xB0, Some(0b010))        => Some(Self::ChannelEnable(Channel::CH3)),
-            (0xB0, Some(0b011))        => Some(Self::ChannelEnable(Channel::CH4)),
-            (0xB0, Some(0b100))        => Some(Self::ChannelEnable(Channel::CH5)),
-            (0xB0, Some(0b101))        => Some(Self::ChannelEnable(Channel::CH6)),
-            (0xB0, Some(0b110))        => Some(Self::ChannelEnable(Channel::CH7)),
-            (0xB0, Some(0b111))        => Some(Self::ChannelEnable(Channel::CH8)),
+    pub fn from_address(address: (u16, u8)) -> Option<Self> {
 
-            (0xB1, Some(0b000) | None) => Some(Self::ChannelEnable(Channel::CH9)),
-            (0xB1, Some(0b001))        => Some(Self::ChannelEnable(Channel::CH10)),
-            (0xB1, Some(0b010))        => Some(Self::ChannelEnable(Channel::CH11)),
-            (0xB1, Some(0b011))        => Some(Self::ChannelEnable(Channel::CH12)),
-            (0xB1, Some(0b100))        => Some(Self::ChannelEnable(Channel::CH1314)),
-            (0xB1, Some(0b101))        => Some(Self::ChannelEnable(Channel::CH1516)),
-            (0xB1, Some(0b110))        => Some(Self::ChannelEnable(Channel::Return1)),
-            (0xB1, Some(0b111))        => Some(Self::ChannelEnable(Channel::Return2)),
 
-            (0xB2, Some(0b000) | None) => Some(Self::BusEnable(Bus::Aux1)),
-            (0xB2, Some(0b001))        => Some(Self::BusEnable(Bus::Aux2)),
-            (0xB2, Some(0b010))        => Some(Self::BusEnable(Bus::Aux3)),
-            (0xB2, Some(0b011))        => Some(Self::BusEnable(Bus::Aux4)),
+        let offset = match address.0 {
+            0x0B0..=0x0B4 => 0x0B0,
+            0x11C..=0x11F => 0x11C,
+            _ => return None,
+        };
 
-            (0xB4, Some(0b111) | None) => Some(Self::BusEnable(Bus::StereoOut)),
-
-            (0xB3, Some(0b000) | None) => Some(Self::BusEnable(Bus::Effect1)),
-            (0xB3, Some(0b001))        => Some(Self::BusEnable(Bus::Effect2)),
-
+        let channel: Option<Channel> = match (address.0 - offset, address.1) {
+            (0, 0b000) => Some(Channel::CH1),
+            (0, 0b001) => Some(Channel::CH2),
+            (0, 0b010) => Some(Channel::CH3),
+            (0, 0b011) => Some(Channel::CH4),
+            (0, 0b100) => Some(Channel::CH5),
+            (0, 0b101) => Some(Channel::CH6),
+            (0, 0b110) => Some(Channel::CH7),
+            (0, 0b111) => Some(Channel::CH8),
+            (1, 0b000) => Some(Channel::CH9),
+            (1, 0b001) => Some(Channel::CH10),
+            (1, 0b010) => Some(Channel::CH11),
+            (1, 0b011) => Some(Channel::CH12),
+            (1, 0b100) => Some(Channel::CH1314),
+            (1, 0b101) => Some(Channel::CH1516),
+            (1, 0b110) => Some(Channel::Return1),
+            (1, 0b111) => Some(Channel::Return2),
             _ => None,
+        };
+
+        if channel.is_some() {
+            return match offset {
+                0x0B0 => Some(Self::ChannelEnable(channel.unwrap())),
+                0x11C => Some(Self::EqEnable(EqChannel::Channel(channel.unwrap()))),
+                _ => unreachable!(),
+            };
+        }
+
+        let bus: Option<Bus> = match address {
+            (0x0B2 | 0x11F, 0b000) => Some(Bus::Aux1),
+            (0x0B2 | 0x11F, 0b001) => Some(Bus::Aux2),
+            (0x0B2 | 0x11F, 0b010) => Some(Bus::Aux3),
+            (0x0B2 | 0x11F, 0b011) => Some(Bus::Aux4),
+            (0x0B4 | 0x11F, 0b111) => Some(Bus::StereoOut),
+            (0x0B3, 0b000) => Some(Bus::Effect1),
+            (0x0B3, 0b001) => Some(Bus::Effect2),
+            _ => return None,
+        };
+
+        match offset {
+            0x0B0 => Some(Self::BusEnable(bus.unwrap())),
+            0x11C => Some(Self::EqEnable(EqChannel::Bus(bus.unwrap()))),
+            _ => unreachable!(),
         }
     }
 }

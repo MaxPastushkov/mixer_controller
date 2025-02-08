@@ -2,14 +2,6 @@
 const uid = Math.floor(Math.random() * 1000000).toString();
 
 class Busses {
-    StereoOut;
-    Aux1;
-    Aux2;
-    Aux3;
-    Aux4;
-    Effect1;
-    Effect2;
-
     constructor(initValue) {
         this.StereoOut = initValue;
         this.Aux1 = initValue;
@@ -22,23 +14,6 @@ class Busses {
 }
 
 class Channels {
-    CH1;
-    CH2;
-    CH3;
-    CH4;
-    CH5;
-    CH6;
-    CH7;
-    CH8;
-    CH9;
-    CH10;
-    CH11;
-    CH12;
-    CH1314;
-    CH1516;
-    Return1;
-    Return2;
-
     constructor(initValue, hasReturn1 = true, hasReturn2 = true) {
         this.CH1 = initValue;
         this.CH2 = initValue;
@@ -54,33 +29,15 @@ class Channels {
         this.CH12 = initValue;
         this.CH1314 = initValue;
         this.CH1516 = initValue;
-
-        if (hasReturn1)
-            this.Return1 = initValue;
-        else
-            delete this.Return1;
-
-        if (hasReturn2)
-            this.Return2 = initValue;
-        else
-            delete this.Return2;
+        if (hasReturn1) this.Return1 = initValue;
+        if (hasReturn2) this.Return2 = initValue;
     }
 }
 
-class EqChannels extends Channels {
-    StereoOut;
-    Aux1;
-    Aux2;
-    Aux3;
-    Aux4;
-
+class EqChannels {
     constructor(initValue) {
-        super(initValue);
-        this.StereoOut = initValue;
-        this.Aux1 = initValue;
-        this.Aux2 = initValue;
-        this.Aux3 = initValue;
-        this.Aux4 = initValue;
+        this.Channel = new Channels(initValue);
+        this.Bus = new Busses(initValue);
     }
 }
 
@@ -116,14 +73,9 @@ let mixerState = {
             HiMid: new EqChannels(0),
             High:  new EqChannels(0)
         },
-        On: new EqChannels(false),
-        Attenuator: new Channels(false, false, false)
-    }
+    },
+    EqEnable: new EqChannels(false)
 };
-delete mixerState.BusSend.Effect1.Return1;
-delete mixerState.BusSend.Effect2.Return2;
-delete mixerState.EqControl.Attenuator.Return1;
-delete mixerState.EqControl.Attenuator.Return2;
 
 // Convert path to object
 function index(obj, idxList, value) {
@@ -194,7 +146,7 @@ function postValue(controlDot, value, endpoint) {
     obj.client_id = uid;
     console.log(obj);
 
-    fetch("http://127.0.0.1:8080/" + endpoint, {
+    fetch(window.location.origin + endpoint, {
         method: "POST",
         body: JSON.stringify(obj),
         headers: {
@@ -207,9 +159,9 @@ function initControls() {
     for (let control of document.getElementsByClassName("control")) {
 
         if (control.type === "range") {
-            control.setAttribute("oninput", "postValue(this.id,parseInt(this.value),'u7')");
+            control.setAttribute("oninput", "postValue(this.id,parseInt(this.value),'/u7')");
         } else if (control.type === "checkbox") {
-            control.setAttribute("oninput", "postValue(this.id,this.checked,'bit')");
+            control.setAttribute("oninput", "postValue(this.id,this.checked,'/bit')");
         }
     }
 }

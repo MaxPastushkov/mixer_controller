@@ -114,7 +114,7 @@ async fn main() -> std::io::Result<()> {
                         let bits: u8 = message[8] & 0b0111;
                         let value: bool = (message[8] & 0b1000) > 0;
                         let obj = BitControlVal {
-                            control: BitControl::from_address((group, Some(bits))).unwrap(),
+                            control: BitControl::from_address((group, bits)).unwrap(),
                             value,
                             client_id: String::new(),
                         };
@@ -137,10 +137,10 @@ async fn main() -> std::io::Result<()> {
                         };
                         executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
 
-                    } else if BitControl::from_address((i as u16 + 0x0C, None)).is_some() {
+                    } else if BitControl::from_address((i as u16 + 0x0C, 0)).is_some() {
 
                         for j in 0u8..=0b111 {
-                            if let Some(control) = BitControl::from_address((i as u16 + 0x0C, Some(j))) {
+                            if let Some(control) = BitControl::from_address((i as u16 + 0x0C, j)) {
                                 let obj = BitControlVal {
                                     control,
                                     value: value & (1 << j) != 0,
@@ -195,7 +195,7 @@ async fn main() -> std::io::Result<()> {
             .service(actix_files::Files::new("/", "./static").index_file("index.html"))
             .wrap(Logger::default())
     })
-        .bind("127.0.0.1:8080")?
+        .bind("0.0.0.0:8080")?
         .run()
         .await
 }
