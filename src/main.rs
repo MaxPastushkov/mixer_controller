@@ -98,7 +98,7 @@ async fn main() -> std::io::Result<()> {
             println!("Received MIDI Data: {:02X?}", message);
 
             if message.len() == 10 {
-                let output: String = match message[5] {
+                let output = match message[5] {
                     0x10 => {
                         let addr: u16 = ((message[6] as u16) << 7) | ((message[7] as u16) & 0x7F);
                         let control: Address = *STATE_MAP.lock().unwrap().get_by_left(&addr).unwrap();
@@ -120,7 +120,7 @@ async fn main() -> std::io::Result<()> {
                         };
                         serde_json::to_string(&obj).unwrap()
                     }
-                    _ => "Internal error".to_string()
+                    _ => String::new()
                 };
 
                 executor::block_on(broadcaster_ptr.broadcast(output.as_str()));
@@ -128,6 +128,7 @@ async fn main() -> std::io::Result<()> {
             } else if message.len() >= 30 && message[3] == 0x7E && message[14] == 0x4D {
                 // Response from bulk scene data
                 for i in 0..(message.len()-32)/2 {
+
                     let value: u8 = message[i*2 + 30] << 4 | message[i*2 + 31];
                     if let Some(address) = STATE_MAP.lock().unwrap().get_by_left(&(i as u16 + 0x0C)) {
                         let obj = U7ControlVal {
@@ -147,10 +148,29 @@ async fn main() -> std::io::Result<()> {
                                     client_id: String::new(),
                                 };
                                 executor::block_on(broadcaster_ptr.broadcast(serde_json::to_string(&obj).unwrap().as_str()));
-                                // TODO: Make this line only run once
                             }
                         }
+
                     }
+                }
+            } else if message.len() > 10 {
+
+                for i in 0..message.len()-9 {
+                    let output = match message[5] {
+                        0x10 => {
+                            let addr: u16 = (((message[6] as u16) << 7) | ((message[7] as u16) & 0x7F)) + (i as u16);
+                            let control: Address = *STATE_MAP.lock().unwrap().get_by_left(&addr).unwrap();
+                            let obj = U7ControlVal {
+                                control,
+                                value: message[i + 8],
+                                client_id: String::new(),
+                            };
+                            serde_json::to_string(&obj).unwrap()
+                        },
+                        _ => String::new()
+                    };
+
+                    executor::block_on(broadcaster_ptr.broadcast(output.as_str()));
                 }
             }
         },
