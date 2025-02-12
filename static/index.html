@@ -56,8 +56,15 @@
 
             <input type="checkbox" class="control" id="BusEnable.StereoOut" /><br /><br />
 
-            <input type="range" min="0" max="119" value="0" class="control" id="EqControl.Q.LoMid.Channel.CH1" /><br />
-            <input type="checkbox" class="control" id="EqEnable.Bus.StereoOut" />
+            <input type="range" min="0" max="127" value="0" class="control" id="EqControl.F.Low.Channel.CH1" /><br />
+            <input type="range" min="0" max="127" value="0" class="control" id="EqControl.G.Low.Channel.CH1" /><br />
+            <input type="range" min="0" max="127" value="0" class="control" id="EqControl.Q.Low.Channel.CH1" /><br />
+
+            <input type="radio" class="control" id="EqSpecial.Channel.CH1.Low.Normal" name="radio1" />
+            <input type="radio" class="control" id="EqSpecial.Channel.CH1.Low.Shelf" name="radio1" />
+            <input type="radio" class="control" id="EqSpecial.Channel.CH1.Low.Filter" name="radio1" /><br />
+
+            <input type="checkbox" class="control" id="EqEnable.Channel.CH1" />
         </label>
     </body>
 </html>

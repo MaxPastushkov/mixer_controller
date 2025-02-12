@@ -138,12 +138,15 @@ pub enum BitControl {
     ChannelEnable(Channel),
     BusEnable(Bus),
     EqEnable(EqChannel),
+    DynEnable(EqChannel),
 }
-impl BitControl { // TODO: Move to BiHashMap
+impl BitControl {
     pub fn to_address(&self) -> (u16, u8) {
         match self {
 
-            Self::ChannelEnable(c) | Self::EqEnable(EqChannel::Channel(c)) => {
+            Self::ChannelEnable(c) |
+            Self::EqEnable(EqChannel::Channel(c)) |
+            Self::DynEnable(EqChannel::Channel(c)) => {
                 let (offset, channel_bits) = match c {
                     Channel::CH1     => (0, 0b000),
                     Channel::CH2     => (0, 0b001),
@@ -165,10 +168,13 @@ impl BitControl { // TODO: Move to BiHashMap
                 match self {
                     Self::ChannelEnable(_) => (offset + 0x0B0, channel_bits),
                     Self::EqEnable(EqChannel::Channel(_)) => (offset + 0x11C, channel_bits),
+                    Self::DynEnable(EqChannel::Channel(_)) => (offset + 0x258, channel_bits),
                     _ => unreachable!(),
                 }
             },
-            Self::BusEnable(b) | Self::EqEnable(EqChannel::Bus(b)) => {
+            Self::BusEnable(b) |
+            Self::EqEnable(EqChannel::Bus(b)) |
+            Self::DynEnable(EqChannel::Bus(b)) => {
                 let bus_bits = match b {
                     Bus::Aux1      => 0b000,
                     Bus::Aux2      => 0b001,
@@ -191,6 +197,11 @@ impl BitControl { // TODO: Move to BiHashMap
                         _ => panic!(), // Invalid configuration for EQ Bus
                     }, bus_bits),
 
+                    Self::DynEnable(EqChannel::Bus(_)) => (match b {
+                        Bus::Aux1 | Bus::Aux2 | Bus::Aux3 | Bus::Aux4 | Bus::StereoOut => 0x025A,
+                        _ => panic!(), // Invalid configuration for Dyn Bus
+                    }, bus_bits),
+
                     _ => unreachable!(),
                 }
             }
@@ -202,6 +213,7 @@ impl BitControl { // TODO: Move to BiHashMap
         let offset = match address.0 {
             0x0B0..=0x0B4 => 0x0B0,
             0x11C..=0x11F => 0x11C,
+            0x258..=0x25A => 0x258,
             _ => return None,
         };
 
@@ -229,6 +241,7 @@ impl BitControl { // TODO: Move to BiHashMap
             return match offset {
                 0x0B0 => Some(Self::ChannelEnable(channel.unwrap())),
                 0x11C => Some(Self::EqEnable(EqChannel::Channel(channel.unwrap()))),
+                0x258 => Some(Self::DynEnable(EqChannel::Channel(channel.unwrap()))),
                 _ => unreachable!(),
             };
         }
@@ -247,6 +260,7 @@ impl BitControl { // TODO: Move to BiHashMap
         match offset {
             0x0B0 => Some(Self::BusEnable(bus.unwrap())),
             0x11C => Some(Self::EqEnable(EqChannel::Bus(bus.unwrap()))),
+            0x258 => Some(Self::DynEnable(EqChannel::Bus(bus.unwrap()))),
             _ => unreachable!(),
         }
     }

@@ -39,13 +39,6 @@ pub fn init_state_map() {
         }
     }
 
-    // TODO: Make this work:
-    // EQ On's
-    // for eq_channel in 0u8..=20 {
-    //     let channel = EqChannel::from_u8(eq_channel).unwrap();
-    //     map.insert(0x11D + eq_channel as u16, EqBitControl::from_u8(i));
-    // }
-
     // Master volumes
     map.insert(0x1C, Address::BusMaster(Bus::Aux1));
     map.insert(0x1D, Address::BusMaster(Bus::Aux2));

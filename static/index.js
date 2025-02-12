@@ -74,7 +74,12 @@ let mixerState = {
             High:  new EqChannels(0)
         },
     },
-    EqEnable: new EqChannels(false)
+    EqEnable: new EqChannels(false),
+    EqSpecial: new EqChannels({
+        Low: "Normal",
+        High: "Normal"
+    }),
+    DynEnable: new EqChannels(false),
 };
 
 // Convert path to object
@@ -108,28 +113,52 @@ function dotToObj(dot) {
 }
 
 function updateState(obj) {
-    let {control, value} = obj;
 
     let path = [];
-    getFirstKey(control, path);
-    index(mixerState, path, value);
-
-    // TODO: Update fader min/max
+    getFirstKey(obj.control, path);
+    index(mixerState, path, obj.value);
 }
 
 // Called by SSE
 function updateControl(obj) {
-    updateState(obj);
 
-    let dot_arr = [];
-    getFirstKey(obj.control, dot_arr);
+    let dotArr = [];
+    getFirstKey(obj.control, dotArr);
+    let dot = dotArr.join('.');
 
-    let control = document.getElementById(dot_arr.join('.'));
+    // Handle special cases
+    if (dot.startsWith("EqControl.Q.")) {
+
+        let isSpecial = true;
+        let specialDot = "EqSpecial." + dotArr.slice(3).join('.');
+        if (obj.value === 0x29) {
+            specialDot += ".Low.Shelf";
+        } else if (obj.value === 0x2A) {
+            specialDot += ".High.Shelf";
+        } else if (obj.value === 0x2B) {
+            specialDot += ".High.Filter";
+        } else if (obj.value === 0x2C) {
+            specialDot += ".Low.Filter";
+        } else {
+            isSpecial = false;
+            specialDot += `.${dotArr[2]}.Normal`;
+        }
+        updateSpecial(specialDot, false);
+
+        let button = document.getElementById(specialDot);
+        if (button) button.checked = true;
+
+        if (isSpecial) return;
+    }
+
+    let control = document.getElementById(dot);
     if (control) {
         if (typeof obj.value === "boolean") {
             control.checked = obj.value;
         } else {
-            control.value = obj.value;        }
+            control.value = obj.value;
+        }
+        updateState(obj);
     } else {
         console.warn("Control not found: " + JSON.stringify(obj.control));
     }
@@ -145,8 +174,72 @@ function postValue(controlDot, value, endpoint) {
 
     obj.client_id = uid;
     console.log(obj);
-
     fetch(window.location.origin + endpoint, {
+        method: "POST",
+        body: JSON.stringify(obj),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+}
+
+function updateSpecial(controlDot, enablePOST) {
+
+    let path = controlDot.split('.');
+    let mode = path[4];
+    let band = path[3];
+
+    if (!["Low", "High"].includes(band)) {
+        return;
+    }
+    if (!["Normal", "Shelf", "Filter"].includes(mode)) {
+        console.error("Invalid eq band mode: " + mode);
+        return;
+    }
+
+    index(mixerState, path.slice(0, 4), mode); // Update mixerState
+
+    let QControlPath = `EqControl.Q.${band}.${path.slice(1, 3).join('.')}`;
+    let QControl = document.getElementById(QControlPath);
+    let GControl = document.getElementById(`EqControl.G.${band}.${path.slice(1, 3).join('.')}`);
+
+    if (!QControl || !GControl) return;
+
+    if (mode === "Normal") {
+        QControl.removeAttribute("disabled");
+    } else {
+        QControl.setAttribute("disabled", "");
+    }
+
+    if (mode === "Filter") {
+        GControl.setAttribute("min", "35");
+        GControl.setAttribute("max", "36");
+    } else {
+        GControl.setAttribute("min", "0");
+        GControl.setAttribute("max", "72");
+    }
+
+    if (!enablePOST) return;
+
+    let obj = {
+        control: dotToObj(QControlPath),
+        client_id: uid,
+    };
+
+    if (band === "Low" && mode === "Shelf") {
+        obj.value = 0x29;
+    } else if (band === "High" && mode === "Shelf") {
+        obj.value = 0x2A;
+    } else if (band === "Low" && mode === "Filter") {
+        obj.value = 0x2B;
+    } else if (band === "High" && mode === "Filter") {
+        obj.value = 0x2C;
+    } else {
+        obj.value = index(mixerState, QControlPath.split('.'));
+    }
+
+    console.log(obj);
+    fetch(window.location.origin + "/u7", {
         method: "POST",
         body: JSON.stringify(obj),
         headers: {
@@ -160,8 +253,19 @@ function initControls() {
 
         if (control.type === "range") {
             control.setAttribute("oninput", "postValue(this.id,parseInt(this.value),'/u7')");
+
+            if (control.id.startsWith("EqControl.F")) {
+                control.setAttribute("max", "119");
+            } else if (control.id.startsWith("EqControl.G")) {
+                control.setAttribute("max", "72");
+            } else if (control.id.startsWith("EqControl.Q")) {
+                control.setAttribute("max", "40");
+            }
+
         } else if (control.type === "checkbox") {
             control.setAttribute("oninput", "postValue(this.id,this.checked,'/bit')");
+        } else if (control.type === "radio") {
+            control.setAttribute("oninput", "updateSpecial(this.id,true)");
         }
     }
 }
