@@ -1,0 +1,8 @@
+Address for CH1: 0x26A
+
+00 => Comp
+01 => Gate
+02 => Ducking
+03 => Expand
+04 => Compand-H
+05 => Compand-S

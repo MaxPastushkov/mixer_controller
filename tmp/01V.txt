@@ -1,0 +1,107 @@
+01V Sysex Format:
+
+F0 43 10 3E 04 [DATA] F7
+
+[DATA]:
+
+    - Input Faders: 10 00 [ID] [VALUE]
+        - [ID] = Channel + [MODE]
+        - Master [ID] = 0x24
+        - [MODE] = 0x0B for HOME
+                 = 0x26 for AUX 1
+                 = 0x32 for AUX 2
+                 = 0x3E for AUX 3
+                 = 0x4A for AUX 4
+                 = 0x56 for EFFECT 1
+                 = 0x62 for EFFECT 2
+        
+    - ON/OFF: 40 01 [GROUP] [ID]
+        - [GROUP] = 0x30 for Chan. 1-8 (000-111)
+                  = 0x31 for Chan. 9-15/16 (000-101) + Eff. Returns (110-111)
+                  = 0x32 for Aux 1-4 (000-011) + Bus 1-4 (100-111)
+                  = 0x33 for Eff. Sends (000-001) + ???
+                  = 0x34 for Bus ST 1-4 (000-011) + Master (111)
+        - [ID] = Channel(3 bits) | (0b1000 * on)
+        
+    - SOLO: 43 00 [GROUP] [ID]
+        - [GROUP] = 0x64 for Chan. 1-8 (000-111)
+                  = 0x65 for Chan. 9-15/16 (000-101) + Eff. Returns (110-111)
+        - [ID] = Channel(3 bits) | (0b1000 * on)
+        
+    - EQ ON/OFF: 40 02 [GROUP] [ID]
+        - [GROUP] = 0x1C for Chan. 1-8 (000-111)
+                  = 0x1D for Chan. 9-15/16 (000-101) + Eff. Returns (110-111)
+                  = 0x1F for Aux 1-4 (000-011) + ??? + Master (111)
+        - [ID] = Channel(3 bits) | (0b1000 * on)
+
+    - EQ: 10 [ID MSB] [ID LSB] [VALUE]
+        - [ID LSB] is a 7-bit value, so (00 7F)+1 = (01 00)
+        - Map:
+            -----------------------------------------
+            |  [ID]  | Knob | Freq. Range | Channel |
+            | 0x0220 |  F   |     LOW     |    1    |
+            | 0x0221 |  F   |     LOW     |    2    |
+            |         ....................          |
+            | 0x022D |  F   |     LOW     |  15/16  |
+            | 0x022E |  F   |     LOW     |   RET1  |
+            | 0x022F |  F   |     LOW     |   RET2  |
+            | 0x0230 |  F   |     LOW     |   AUX1  |
+            | 0x0231 |  F   |     LOW     |   AUX2  |
+            | 0x0232 |  F   |     LOW     |   AUX3  |
+            | 0x0233 |  F   |     LOW     |   AUX4  |
+            | 0x0234 |  F   |     LOW     |  MASTER |
+            | 0x0235 |  F   |     LOW     |    ?    |
+            | 0x0236 |  F   |    LO-MID   |    1    |
+            |         ....................          |
+            |         ....................          |
+            | 0x024A |  F   |    LO-MID   |  MASTER |
+            | 0x024B |  F   |    LO-MID   |    ?    |
+            | 0x024C |  F   |    HI-MID   |    1    |
+            |         ....................          |
+            |         ....................          |
+            | 0x0260 |  F   |    HI-MID   |  MASTER |
+            | 0x0261 |  F   |    HI-MID   |    ?    |
+            | 0x0262 |  F   |     HIGH    |    1    |
+            |         ....................          |
+            |         ....................          |
+            | 0x0276 |  F   |     HIGH    |  MASTER |
+            | 0x0277 |  F   |     HIGH    |    ?    |
+            | 0x0278 |  G   |     LOW     |    1    |
+            |         ....................          |
+            |         ....................          |
+            |         ....................          |
+            | 0x034E |  G   |     HIGH    |  MASTER |
+            | 0x034F |  G   |     HIGH    |    ?    |
+            | 0x0350 |  Q   |     LOW     |    1    |
+            |         ....................          |
+            |         ....................          |
+            |         ....................          |
+            | 0x0426 |  Q   |     HIGH    |  MASTER |
+            -----------------------------------------
+        
+        - [VALUE] ranges:
+            - For F knob: 0x00 to 0x77
+            - For G knob: 0x00 to 0x48
+                - If Q is HPF or LPF, ON=0x24 and OFF=0x23
+            - For Q knob: 0x00 to 0x28
+                - Special values:
+                    - L.SHELF = 0x29 (LOW,  MAX)
+                    - H.SHELF = 0x2A (HIGH, MAX)
+                    - LPF     = 0x2B (HIGH, MIN)
+                    - HPF     = 0x2C (LOW,  MIN)
+        
+    - Panning: 10 [ID MSB] [ID LSB] [VALUE]
+        - [VALUE] ranges from 0x00 to 0x20
+        - [ID] map:
+            - 0x0660 - 0x066B => Channels 1-12
+            - 0x0674 - 0x0677 => Channels 13-16
+            - 0x0678 - 0x0679 => Return 1 L/R
+            - 0x067A - 0x067B => Return 2 L/R
+            - 0x067C - 0x067F => Busses 1-4
+            - 0x0730          => Master
+        
+        
+Exceptions:
+    - If two adjacent [ID]s are changed simultaneously, both values will be sent in the same packet:
+    - For Input Faders and Effect Returns: [ID1] [VALUE1] [VALUE2]
+    - For ON/OFF: [GROUP] [ID1] [ID2]
