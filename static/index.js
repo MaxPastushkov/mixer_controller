@@ -249,7 +249,7 @@ function updateSpecial(controlDot, enablePOST) {
 }
 
 function initControls() {
-    for (let control of document.getElementsByClassName("control")) {
+    for (let control of document.querySelectorAll("input")) {
 
         if (control.type === "range") {
             control.setAttribute("oninput", "postValue(this.id,parseInt(this.value),'/u7')");
