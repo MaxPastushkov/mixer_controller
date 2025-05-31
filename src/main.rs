@@ -140,6 +140,10 @@ async fn main() -> std::io::Result<()> {
 
                     } else if BitControl::from_address((i as u16 + 0x0C, 0)).is_some() {
 
+                        if i == 0xA8 {
+                            println!("Here");
+                        }
+
                         for j in 0u8..=0b111 {
                             if let Some(control) = BitControl::from_address((i as u16 + 0x0C, j)) {
                                 let obj = BitControlVal {

@@ -209,7 +209,6 @@ impl BitControl {
     }
     pub fn from_address(address: (u16, u8)) -> Option<Self> {
 
-
         let offset = match address.0 {
             0x0B0..=0x0B4 => 0x0B0,
             0x11C..=0x11F => 0x11C,

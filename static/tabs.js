@@ -58,7 +58,6 @@ channel1314.querySelector(".effect2-knob").id = `BusSend.Effect2.CH1314`;
 let channel1516 = createChannel("#home", "15/16", "BusSend.StereoOut.CH1516", "ChannelEnable.CH1516");
 channel1516.querySelector(".effect1-knob").id = `BusSend.Effect1.CH1516`;
 channel1516.querySelector(".effect2-knob").id = `BusSend.Effect2.CH1516`;
-console.log("here1");
 
 let master = createChannel("#home", "Master", "BusMaster.StereoOut", "BusEnable.StereoOut");
 master.querySelector(".fader").className += " master";

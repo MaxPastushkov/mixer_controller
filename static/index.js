@@ -126,6 +126,8 @@ function updateControl(obj) {
     getFirstKey(obj.control, dotArr);
     let dot = dotArr.join('.');
 
+    console.log(`Setting ${dot} to ${obj.value}`);
+
     // Handle special cases
     if (dot.startsWith("EqControl.Q.")) {
 
@@ -157,6 +159,7 @@ function updateControl(obj) {
             control.checked = obj.value;
         } else {
             control.value = obj.value;
+            control.redraw();
         }
         updateState(obj);
     } else {
@@ -282,6 +285,6 @@ evtSource.onmessage = (event) => {
         return;
     }
 
-    console.log("Received event: " + event.data);
+    //console.log("Received event: " + event.data);
     updateControl(data);
 }

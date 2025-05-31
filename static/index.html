@@ -44,8 +44,8 @@
                 align-self: flex-end;
             }
 
-            .fader {
-                writing-mode: vertical-lr; /* vertical mode */
+            /*.fader {
+                writing-mode: vertical-lr;
                 direction: rtl;
                 height: 242px;
                 margin: 1rem 0;
@@ -68,6 +68,7 @@
                 background: url('fader-cap.png');
                 cursor: pointer;
             }
+            */
 
             .master::-webkit-slider-thumb {
                 background-color: crimson;
@@ -141,7 +142,7 @@
 
                 <input type="checkbox" class="enable" />
                 <div class="fader-wrapper">
-                    <input type="range" min="0" max="127" value="0" class="fader" />
+                    <input type="range" min="0" max="127" value="0" class="fader input-slider" data-height="242" data-width="20" data-src="fader-cap.png" data-bgcolor="#fff" />
                 </div>
             </div>
         </template>
